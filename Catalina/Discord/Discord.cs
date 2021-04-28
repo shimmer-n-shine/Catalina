@@ -52,9 +52,10 @@ namespace Catalina.Discord
                 Timeout = TimeSpan.FromSeconds(30)
             });
 
-            discord.GuildMemberRemoved += Events.Discord_GuildMemberRemoved;
+            //discord.GuildMemberRemoved += Events.Discord_GuildMemberRemoved;
             discord.MessageCreated += Events.Discord_MessageCreated;
-            discord.Ready += Events.Discord_Ready;
+            discord.MessageDeleted += Events.Discord_MessageDeleted;
+            //discord.Ready += Events.Discord_Ready;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
 
@@ -130,11 +131,11 @@ namespace Catalina.Discord
     }
     public struct Response
     {
-        public Response(string trigger, string response, string description = null, List<DiscordChannel> allowedChannels = null)
+        public Response(string trigger, string response, string description = null, List<DiscordChannel> disallowedChannels = null)
         {
-            this.trigger = trigger; this.response = response; this.description = description; this.allowedChannels = allowedChannels;
+            this.trigger = trigger; this.response = response; this.description = description; this.disallowedChannels = disallowedChannels;
         }
-        public string trigger; public string response; public string description; public List<DiscordChannel> allowedChannels;
+        public string trigger; public string response; public string description; public List<DiscordChannel> disallowedChannels;
     }
     public struct Reaction
     {
@@ -142,10 +143,6 @@ namespace Catalina.Discord
         {
             this.messageID = messageID; this.emoji = discordEmoji; this.role = role;
         }
-        public Reaction(ulong messageID, DiscordGuildEmoji guildEmoji, DiscordRole role)
-        {
-            this.messageID = messageID; this.emoji = guildEmoji; this.role = role;
-        }
-        public ulong messageID; public dynamic emoji; public DiscordRole role;
+        public ulong messageID; public DiscordEmoji emoji; public DiscordRole role;
     }
 }
