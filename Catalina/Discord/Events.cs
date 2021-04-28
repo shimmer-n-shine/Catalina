@@ -56,7 +56,7 @@ namespace Catalina.Discord
         {
             if (ConfigValues.BasicRoleGuildID.ContainsKey(e.Guild.Id))
             {
-                await e.Member.GrantRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(e.Guild.Id));
+                await e.Member.GrantRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(e.Guild.Id), "Automatic role assignment upon joining");
             }
         }
 

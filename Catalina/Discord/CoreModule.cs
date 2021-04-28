@@ -56,7 +56,7 @@ namespace Catalina.Discord
                             {
                                 if (member.Value.Roles.Contains(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id)))
                                 {
-                                    await member.Value.RevokeRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id));
+                                    await member.Value.RevokeRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id), "Automatic revokal of the basic role");
                                 }
                             }
                             catch
@@ -75,7 +75,7 @@ namespace Catalina.Discord
                     {
                         try
                         {
-                            await member.Value.GrantRoleAsync(role);
+                            await member.Value.GrantRoleAsync(role, "Automatic assignment of the basic role");
                         }
                         catch
                         {
