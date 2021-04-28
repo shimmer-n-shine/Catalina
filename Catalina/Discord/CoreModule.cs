@@ -17,7 +17,7 @@ namespace Catalina.Discord
         [Command("React")]
         [Description("Add a role when a user reacts to a message")]
         [Aliases("Reaction")]
-        public async Task AddReaction(CommandContext ctx, string arg)
+        public async Task AddReaction(CommandContext ctx, string arg = null)
         {
             Reaction reaction;
             DiscordEmbed discordEmbed;
@@ -68,6 +68,11 @@ namespace Catalina.Discord
                             }
                         }
                     }
+                }
+                else
+                {
+                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You didn't provide an argument! try `add` or `remove`!", color: DiscordColor.Red);
+                    await ctx.RespondAsync(discordEmbed);
                 }
             }
         }
