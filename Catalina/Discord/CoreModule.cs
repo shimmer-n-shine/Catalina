@@ -35,6 +35,65 @@ namespace Catalina.Discord
             }
         }
 
+        [Command("Setbasicrole")]
+        [Description("Set the basic role for your server! This is an admin exclusive command.")]
+        [Aliases("BasicRole")]
+        public async Task SetBasicRole(CommandContext ctx, string mention)
+        {
+            DiscordEmbed discordEmbed;
+            var verification = await IsVerifiedAsync(ctx, true);
+            if (verification == PermissionCode.Qualify)
+            {
+                if (mention != null)
+                {
+                    var role = GetRoleFromList(ctx.Message.MentionedRoles.ToList(), ctx);
+
+                    if (ConfigValues.BasicRoleGuildID.ContainsKey(ctx.Guild.Id))
+                    {
+                        foreach (var member in ctx.Guild.Members)
+                        {
+                            try
+                            {
+                                if (member.Value.Roles.Contains(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id)))
+                                {
+                                    await member.Value.RevokeRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id));
+                                }
+                            }
+                            catch
+                            {
+
+                            }
+
+                        }
+                        ConfigValues.BasicRoleGuildID.Remove(ctx.Guild.Id);
+                        
+                    }
+                    ConfigValues.BasicRoleGuildID.Add(ctx.Guild.Id, role);
+                    ConfigValues.SaveConfig();
+
+                    foreach (var member in ctx.Guild.Members)
+                    {
+                        try
+                        {
+                            await member.Value.GrantRoleAsync(role);
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+
+                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: DiscordColor.SpringGreen);
+                    await ctx.RespondAsync(discordEmbed);
+                }
+                else
+                {
+                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The role you provided was invalid!", color: DiscordColor.Red);
+                    await ctx.RespondAsync(discordEmbed);
+                }
+            }
+        }
+
         [Command("React")]
         [Description("Add a role when a user reacts to a message")]
         [Aliases("Reaction")]
