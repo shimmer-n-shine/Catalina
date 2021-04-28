@@ -25,6 +25,7 @@ namespace Catalina.Configuration
         public ulong? DevID;
         [NonSerialized] public List<Response> Responses;
         [NonSerialized] public List<Reaction> Reactions;
+        public Dictionary<ulong, DiscordRole> BasicRoleGuildID;
         //[NonSerialized] public Dictionary<string, string> Events;
         public ConfigValues()
         {
@@ -43,6 +44,7 @@ namespace Catalina.Configuration
             DiscordToken = null;
             Responses = new List<Response>();
             Reactions = new List<Reaction>();
+            BasicRoleGuildID = new();
             //Events = JsonConvert.DeserializeObject<Dictionary<string, string>>("{ \"AutoBulk\": \"06:00:00\", \"Read\": \"00:15:00\" }");
         }
         public void SaveConfig()
