@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-00840" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="5.0.0-nightly-00840" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-00840" />
+    <PackageReference Include="DSharpPlus" Version="4.1.0-nightly-00849" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.1.0-nightly-00849" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.1.0-nightly-00849" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
