@@ -35,8 +35,11 @@ namespace Catalina.Discord
 
                         if (role != null)
                         {
+                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: DiscordColor.SpringGreen);
+                            await ctx.RespondAsync(discordEmbed);
                             reaction = new Reaction( (ulong) id, emoji, role);
                             ConfigValues.Reactions.Add(reaction);
+                            ConfigValues.SaveConfig();
                         }
                     }
                     
