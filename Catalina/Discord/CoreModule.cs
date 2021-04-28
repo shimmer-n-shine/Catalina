@@ -14,6 +14,26 @@ namespace Catalina.Discord
     class CoreModule : BaseCommandModule
     {
         static ConfigValues ConfigValues => ConfigValues.configValues;
+
+        [Command("updateconfig")]
+        [Description("Update configuration for the bot. Only admins can execute this.")]
+        [Aliases("updateconf", "conf", "confupdate")]
+        public async Task UpdateConf(CommandContext ctx)
+        {
+            var verification = await IsVerifiedAsync(ctx, true);
+            if (verification == PermissionCode.Qualify)
+            {
+                var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.Orange, title: "Updating Configuration Files...");
+                DiscordMessage message = await ctx.RespondAsync(discordEmbed);
+
+
+                ConfigValues.LoadConfig();
+                await Discord.UpdateChannels();
+                discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Done!", description: "Sucessfully updated configuration files");
+                await message.ModifyAsync(discordEmbed);
+            }
+        }
+
         [Command("React")]
         [Description("Add a role when a user reacts to a message")]
         [Aliases("Reaction")]
@@ -74,6 +94,207 @@ namespace Catalina.Discord
                     discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You didn't provide an argument! try `add` or `remove`!", color: DiscordColor.Red);
                     await ctx.RespondAsync(discordEmbed);
                 }
+            }
+        }
+
+        [Command("responses")]
+        [Description("View current responses stored and watched for")]
+        [Aliases("response")]
+        public async Task Responses(CommandContext ctx, string args = null, [RemainingText] string text = null)
+        {
+            var roles = ctx.Member.Roles.ToList();
+            var verification = await CoreModule.IsVerifiedAsync(ctx);
+            if (verification == PermissionCode.Qualify)
+            {
+                    List<Response> responses = ConfigValues.Responses;
+                    bool fail = false;
+                    if (args == "list")
+                    {
+                        List<Field> fields = new List<Field>();
+                        foreach (Response response in responses)
+                        {
+                            fields.Add(new Field(response.trigger, response.description));
+                        }
+                        var Embed = Discord.CreateFancyMessage(color: DiscordColor.CornflowerBlue, title: "Responses", description: "Control Catamagne's behaviours when responding to users:", fields: fields);
+                        var Message = await Discord.SendFancyMessage(ctx.Channel, Embed);
+                    }
+                    else if (args == "add")
+                    {
+                        if (text != null)
+                        {
+                            var trigger = text;
+                            var Embed = Discord.CreateFancyMessage(color: DiscordColor.Orange, title: "Adding Response", description: "Please send the text to use as the body of the response:");
+                            await Discord.SendFancyMessage(ctx.Channel, Embed);
+                            var body = await ctx.Message.GetNextMessageAsync();
+                            if (!body.TimedOut)
+                            {
+                                Embed = Discord.CreateFancyMessage(color: DiscordColor.Yellow, title: "Adding Response", description: "Please give a description of the response:");
+                                await Discord.SendFancyMessage(ctx.Channel, Embed);
+                                var description = await ctx.Message.GetNextMessageAsync();
+                                if (!description.TimedOut)
+                                {
+                                    Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Working", description: "Please enter the channel ids where the responseis allowed, seperated by commas.\nsend 'all' for all channels");
+                                    await Discord.SendFancyMessage(ctx.Channel, Embed);
+                                    var channelString = await ctx.Message.GetNextMessageAsync();
+                                    if (!channelString.TimedOut)
+                                    {
+                                        var workingList = ConfigValues.Responses.ToList();
+                                        if (channelString.Result.Content == "all" || string.IsNullOrWhiteSpace(channelString.Result.Content))
+                                        {
+                                            var response = new Response(trigger, body.Result.Content, description.Result.Content);
+                                            workingList.Add(response);
+                                        }
+                                        else
+                                        {
+                                            string[] channelsStrings = string.Join("", channelString.Result.Content.Where(t => !char.IsWhiteSpace(t))).Split(',');
+                                            List<DiscordChannel> channels = new List<DiscordChannel>();
+                                            channelsStrings.ToList().ForEach(async channel =>
+                                            {
+                                                channels.Add(await Discord.discord.GetChannelAsync(Convert.ToUInt64(channel)));
+                                            });
+                                            var response = new Response(trigger, body.Result.Content, description.Result.Content, channels);
+                                            workingList.Add(response);
+                                        }
+                                        ConfigValues.Responses = workingList;
+                                        ConfigValues.SaveConfig();
+                                        Embed = Discord.CreateFancyMessage(color: DiscordColor.CornflowerBlue, title: "Added", description: "Successfully added response to pool.");
+                                        var message = await Discord.SendFancyMessage(ctx.Channel, Embed);
+
+                                    }
+                                    else fail = true;
+                                }
+                                else fail = true;
+
+                            }
+                            else fail = true;
+                            if (fail)
+                            {
+                                var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "You took too long to respond.");
+                                await ctx.RespondAsync(discordEmbed);
+                            }
+                        }
+                        else
+                        {
+                            var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Please mention a trigger to add");
+                            await ctx.RespondAsync(discordEmbed);
+                        }
+
+                    }
+                    else if (args == "edit")
+                    {
+                        if (text != null)
+                        {
+                            var Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Working", description: "Finding response from pool");
+                            var message = await Discord.SendFancyMessage(ctx.Channel, Embed);
+                            var match = ConfigValues.Responses.Select(t => t.trigger);
+                            if (match.Contains(text))
+                            {
+                                var trigger = text;
+                                Embed = Discord.CreateFancyMessage(color: DiscordColor.Orange, title: "Editing Response", description: "Please send the text to use as the body of the response:");
+                                await message.ModifyAsync(Embed);
+                                var body = await ctx.Message.GetNextMessageAsync();
+                                if (!body.TimedOut)
+                                {
+                                    Embed = Discord.CreateFancyMessage(color: DiscordColor.Yellow, title: "Editing Response", description: "Please give a description of the response:");
+                                    await Discord.SendFancyMessage(ctx.Channel, Embed);
+                                    var description = await ctx.Message.GetNextMessageAsync();
+                                    if (!description.TimedOut)
+                                    {
+                                        Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Editing Response", description: "Please enter the channel ids where the responseis allowed, seperated by commas.\nsend 'all' for all channels");
+                                        await Discord.SendFancyMessage(ctx.Channel, Embed);
+                                        var channelString = await ctx.Message.GetNextMessageAsync();
+                                        if (!channelString.TimedOut)
+                                        {
+                                            Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Working", description: "Updating response.");
+                                            message = await Discord.SendFancyMessage(ctx.Channel, Embed);
+                                            var _ = ConfigValues.Responses.ToList();
+                                            _.Remove(ConfigValues.Responses.ToList().Find(t => t.trigger == text));
+                                            if (channelString.Result.Content == "all" || string.IsNullOrWhiteSpace(channelString.Result.Content))
+                                            {
+                                                var response = new Response(trigger, body.Result.Content, description.Result.Content);
+                                                _.Add(response);
+                                            }
+                                            else
+                                            {
+                                                string[] channelsStrings = string.Join("", channelString.Result.Content.Where(t => !char.IsWhiteSpace(t))).Split(',');
+                                                List<DiscordChannel> channels = new List<DiscordChannel>();
+                                                channelsStrings.ToList().ForEach(async channel =>
+                                                {
+                                                    channels.Add(await Discord.discord.GetChannelAsync(Convert.ToUInt64(channel)));
+                                                });
+                                                var response = new Response(trigger, body.Result.Content, description.Result.Content, channels);
+                                                _.Add(response);
+                                            }
+
+                                            ConfigValues.Responses = _;
+                                            ConfigValues.SaveConfig();
+                                            Embed = Discord.CreateFancyMessage(color: DiscordColor.CornflowerBlue, title: "Updated", description: "Successfully updated response.");
+                                            await message.ModifyAsync(Embed);
+
+                                        }
+                                        else fail = true;
+                                    }
+                                    else fail = true;
+
+                                }
+                                else fail = true;
+                                if (fail)
+                                {
+                                    var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "You took too long to respond.");
+                                    await ctx.RespondAsync(discordEmbed);
+                                }
+
+                            }
+                            else
+                            {
+                                var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Trigger not found");
+                                await ctx.RespondAsync(discordEmbed);
+                            }
+                        }
+                        else
+                        {
+                            var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Please mention a trigger to update");
+                            await ctx.RespondAsync(discordEmbed);
+                        }
+                    }
+                    else if (args == "remove")
+                    {
+                        if (text != null)
+                        {
+                            var Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Working", description: "Removing response from pool.");
+                            var message = await Discord.SendFancyMessage(ctx.Channel, Embed);
+                            var match = ConfigValues.Responses.Select(t => t.trigger);
+                            if (match.Contains(text))
+                            {
+                                var _ = ConfigValues.Responses.ToList();
+                                _.Remove(ConfigValues.Responses.ToList().Find(t => t.trigger == text));
+                                ConfigValues.Responses = _;
+                                ConfigValues.SaveConfig();
+                                Embed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Removed", description: "Successfully removed response from pool.");
+                                message = await message.ModifyAsync(Embed);
+                            }
+                            else
+                            {
+                                var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Trigger not found");
+                                await ctx.RespondAsync(discordEmbed);
+                            }
+                        }
+                        else
+                        {
+                            var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Please mention a trigger to remove");
+                            await ctx.RespondAsync(discordEmbed);
+                        }
+                    }
+                    else if (args == null)
+                    {
+                        var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Please provide arguments");
+                        await ctx.RespondAsync(discordEmbed);
+                    }
+                    else
+                    {
+                        var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "Invalid argument. either use:\nresponse add, response remove, response list or response edit");
+                        await ctx.RespondAsync(discordEmbed);
+                    }
             }
         }
 
