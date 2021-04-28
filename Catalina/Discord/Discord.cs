@@ -32,7 +32,7 @@ namespace Catalina.Discord
             discord = new DiscordClient(new DiscordConfiguration()
             {
                 MinimumLogLevel = Microsoft.Extensions.Logging.LogLevel.Debug,
-                Intents = DiscordIntents.GuildMembers | DiscordIntents.GuildIntegrations | DiscordIntents.GuildMessages | DiscordIntents.Guilds | DiscordIntents.GuildPresences,
+                Intents = DiscordIntents.All,
                 Token = ConfigValues.DiscordToken,
                 TokenType = TokenType.Bot,
                 AlwaysCacheMembers = true,
@@ -48,14 +48,13 @@ namespace Catalina.Discord
 
             discord.UseInteractivity(new InteractivityConfiguration()
             {
-                PollBehaviour = PollBehaviour.KeepEmojis,
+                PollBehaviour = PollBehaviour.DeleteEmojis,
                 Timeout = TimeSpan.FromSeconds(30)
             });
 
             //discord.GuildMemberRemoved += Events.Discord_GuildMemberRemoved;
             discord.MessageCreated += Events.Discord_MessageCreated;
             discord.MessageDeleted += Events.Discord_MessageDeleted;
-            //discord.Ready += Events.Discord_Ready;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
 
@@ -139,11 +138,11 @@ namespace Catalina.Discord
     }
     public struct Reaction
     {
-        public Reaction(ulong messageID, DiscordEmoji discordEmoji, DiscordRole role)
+        public Reaction(ulong messageID, DiscordEmoji discordEmoji, DiscordRole role, ulong ChannelID)
         {
-            this.messageID = messageID; this.emoji = discordEmoji; this.role = role;
+            this.messageID = messageID; this.emoji = discordEmoji; this.role = role; this.channelID = ChannelID;
         }
-        public ulong messageID; public DiscordEmoji emoji; public DiscordRole role;
+        public ulong messageID; public DiscordEmoji emoji; public DiscordRole role; public ulong channelID;
     }
     public struct Field
     {
