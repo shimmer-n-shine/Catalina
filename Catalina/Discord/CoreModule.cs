@@ -37,7 +37,7 @@ namespace Catalina.Discord
 
         [Command("Setbasicrole")]
         [Description("Set the basic role for your server! This is an admin exclusive command.")]
-        [Aliases("BasicRole")]
+        [Aliases("BasicRole", "basic")]
         public async Task SetBasicRole(CommandContext ctx, string mention)
         {
             DiscordEmbed discordEmbed;
@@ -83,7 +83,7 @@ namespace Catalina.Discord
                         }
                     }
 
-                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: DiscordColor.SpringGreen);
+                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: role.Color);
                     await ctx.RespondAsync(discordEmbed);
                 }
                 else
@@ -118,7 +118,7 @@ namespace Catalina.Discord
 
                         if (message != null && emoji != null && role != null)
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: DiscordColor.SpringGreen);
+                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
                             await ctx.RespondAsync(discordEmbed);
                             var reaction = new Reaction(message.Id, emoji, role, message.Channel.Id);
 
@@ -148,7 +148,7 @@ namespace Catalina.Discord
 
                                     if (role != null)
                                     {
-                                        discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: DiscordColor.SpringGreen);
+                                        discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
                                         await ctx.RespondAsync(discordEmbed);
                                         var reaction = new Reaction(message.Id, emoji, role, message.Channel.Id);
                                         await message.CreateReactionAsync(emoji);
