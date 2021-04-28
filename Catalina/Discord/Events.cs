@@ -52,6 +52,13 @@ namespace Catalina.Discord
             }
         }
 
+        internal static async Task Discord_GuildMemberAdded(DiscordClient sender, GuildMemberAddEventArgs e)
+        {
+            if (ConfigValues.BasicRoleGuildID.ContainsKey(e.Guild.Id))
+            {
+                await e.Member.GrantRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(e.Guild.Id));
+            }
+        }
 
         internal static Task Discord_MessageDeleted(DiscordClient sender, MessageDeleteEventArgs e)
         {
