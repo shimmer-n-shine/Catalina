@@ -97,7 +97,7 @@ namespace Catalina.Discord
             string url = null,
             EmbedAuthor author = null,
             DiscordColor? color = null,
-            List<DiscordEmbedField> fields = null,
+            List<Field> fields = null,
             EmbedFooter footer = null,
             string imageURL = null,
             EmbedThumbnail thumbnail = null, 
@@ -117,7 +117,7 @@ namespace Catalina.Discord
             if (url != null) embedBuilder.Url = url;
             if (author != null) embedBuilder.Author = author;
             if (color != null) embedBuilder.Color = (DiscordColor) color;
-            if (fields != null) fields.ForEach(field => embedBuilder.AddField(field.Name, field.Value, field.Inline));
+            if (fields != null) fields.ForEach(field => embedBuilder.AddField(field.name, field.value, field.inline));
             if (footer != null) embedBuilder.Footer = footer;
             if (imageURL != null) embedBuilder.ImageUrl = imageURL;
             if (thumbnail != null) embedBuilder.Thumbnail = thumbnail;
@@ -144,5 +144,14 @@ namespace Catalina.Discord
             this.messageID = messageID; this.emoji = discordEmoji; this.role = role;
         }
         public ulong messageID; public DiscordEmoji emoji; public DiscordRole role;
+    }
+    public struct Field
+    {
+
+        public Field(string name, string value, bool inline = false)
+        {
+            this.name = name; this.value = value; this.inline = inline;
+        }
+        public string name; public string value; public bool inline;
     }
 }
