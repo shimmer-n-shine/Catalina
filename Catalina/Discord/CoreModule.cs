@@ -14,35 +14,60 @@ namespace Catalina.Discord
     class CoreModule : BaseCommandModule
     {
         static ConfigValues ConfigValues => ConfigValues.configValues;
-        [Command("AddRoleFromReaction")]
+        [Command("React")]
         [Description("Add a role when a user reacts to a message")]
-        [Aliases("AddReaction")]
-        public async Task AddReaction(CommandContext ctx)
+        [Aliases("Reaction")]
+        public async Task AddReaction(CommandContext ctx, string arg)
         {
             Reaction reaction;
             DiscordEmbed discordEmbed;
             var verification = await IsVerifiedAsync(ctx, true);
             if (verification == PermissionCode.Qualify)
             {
-                var id = await GetMessageIDFromLinkAsync(ctx);
-                if (id != null)
+                if (arg.ToLower() == "add")
                 {
-                    var emoji = await GetEmojiFromMessage(ctx);
-
-                    if (emoji != null)
+                    var id = await GetMessageIDFromLinkAsync(ctx);
+                    if (id != null)
                     {
-                        var role = await GetRoleFromMessage(ctx);
+                        var emoji = await GetEmojiFromMessage(ctx);
 
-                        if (role != null)
+                        if (emoji != null)
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: DiscordColor.SpringGreen);
-                            await ctx.RespondAsync(discordEmbed);
-                            reaction = new Reaction( (ulong) id, emoji, role);
-                            ConfigValues.Reactions.Add(reaction);
-                            ConfigValues.SaveConfig();
+                            var role = await GetRoleFromMessage(ctx);
+
+                            if (role != null)
+                            {
+                                discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: DiscordColor.SpringGreen);
+                                await ctx.RespondAsync(discordEmbed);
+                                reaction = new Reaction((ulong)id, emoji, role);
+                                ConfigValues.Reactions.Add(reaction);
+                                ConfigValues.SaveConfig();
+                            }
+                        }
+
+                    }
+                }
+                else if (arg.ToLower() == "remove")
+                {
+                    var id = await GetMessageIDFromLinkAsync(ctx);
+                    if (id != null)
+                    {
+                        var emoji = await GetEmojiFromMessage(ctx);
+
+                        if (emoji != null)
+                        {
+
+                            if (ConfigValues.Reactions.Select(reaction => reaction.messageID).Contains((ulong) id) && ConfigValues.Reactions.Select(reaction => reaction.emoji).Contains(emoji))
+                            {
+                                reaction = ConfigValues.Reactions.Find(r => r.messageID == (ulong) id && r.emoji == emoji);
+                                ConfigValues.Reactions.Remove(reaction);
+                                ConfigValues.SaveConfig();
+
+                                discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
+                                await ctx.RespondAsync(discordEmbed);
+                            }
                         }
                     }
-                    
                 }
             }
         }
@@ -111,7 +136,7 @@ namespace Catalina.Discord
         public async Task<ulong?> GetMessageIDFromLinkAsync(CommandContext ctx)
         {
             DiscordEmbed discordEmbed;
-            discordEmbed = Discord.CreateFancyMessage(title: "Adding a new reaction!", description: "Please enter the message link to add a reaction to", color: DiscordColor.CornflowerBlue);
+            discordEmbed = Discord.CreateFancyMessage(title: "Adding a new reaction!", description: "Please enter the message link for the reaction", color: DiscordColor.CornflowerBlue);
             await ctx.RespondAsync(discordEmbed);
             var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
 
