@@ -52,7 +52,7 @@ namespace Catalina.Discord
                 Timeout = TimeSpan.FromSeconds(30)
             });
 
-            //discord.GuildMemberRemoved += Events.Discord_GuildMemberRemoved;
+            discord.GuildMemberAdded += Events.Discord_GuildMemberAdded;
             discord.MessageCreated += Events.Discord_MessageCreated;
             discord.MessageDeleted += Events.Discord_MessageDeleted;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
