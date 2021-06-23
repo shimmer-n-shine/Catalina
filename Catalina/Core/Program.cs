@@ -1,8 +1,6 @@
 ﻿using Catalina.Configuration;
 using System;
 using System.Threading.Tasks;
-using Catalina.Discord;
-using Catalina.Core;
 
 namespace Catalina.Core
 {
