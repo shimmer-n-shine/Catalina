@@ -1,5 +1,4 @@
 ﻿using Catalina.Configuration;
-using Catalina.Discord;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
@@ -10,7 +9,6 @@ using Serilog;
 using Serilog.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using static DSharpPlus.Entities.DiscordEmbedBuilder;
 
@@ -40,7 +38,7 @@ namespace Catalina.Discord
             });
             var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
             {
-                StringPrefixes = ConfigValues.Prefixes,
+                StringPrefixes = new[] { ConfigValues.Prefix },
                 CaseSensitive = false,
             });
 
@@ -53,7 +51,7 @@ namespace Catalina.Discord
             });
 
             discord.GuildMemberAdded += Events.Discord_GuildMemberAdded;
-            discord.MessageCreated += Events.Discord_MessageCreated;
+            //discord.MessageCreated += Events.Discord_MessageCreated;
             discord.MessageDeleted += Events.Discord_MessageDeleted;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
@@ -64,16 +62,20 @@ namespace Catalina.Discord
         public static async Task UpdateChannels()
         {
             commandChannels = new List<DiscordChannel>();
-            foreach (var channel in ConfigValues.CommandChannels)
+            foreach (var server in ConfigValues.CommandChannels)
             {
-                try
+                foreach (var channel in server.Value)
                 {
-                    commandChannels.Add(await discord.GetChannelAsync(channel));
+                    try
+                    {
+                        commandChannels.Add(await discord.GetChannelAsync(channel));
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Information(e.GetType() + " error when getting channel id " + channel);
+                    }
                 }
-                catch (Exception e)
-                {
-                    Log.Information(e.GetType() + " error when getting channel id " + channel);
-                }
+                
             }
         }
 
@@ -138,11 +140,11 @@ namespace Catalina.Discord
     }
     public struct Reaction
     {
-        public Reaction(ulong messageID, DiscordEmoji discordEmoji, DiscordRole role, ulong ChannelID)
+        public Reaction(ulong messageID, ulong emojiID, ulong roleID, ulong ChannelID)
         {
-            this.messageID = messageID; this.emoji = discordEmoji; this.role = role; this.channelID = ChannelID;
+            this.messageID = messageID; this.emojiID = emojiID; this.roleID = roleID; this.channelID = ChannelID;
         }
-        public ulong messageID; public DiscordEmoji emoji; public DiscordRole role; public ulong channelID;
+        public ulong messageID; public ulong emojiID; public ulong roleID; public ulong channelID;
     }
     public struct Field
     {
