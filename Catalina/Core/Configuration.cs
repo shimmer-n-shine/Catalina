@@ -1,11 +1,9 @@
-﻿using Catalina.Core;
-using Catalina.Discord;
+﻿using Catalina.Discord;
 using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Catalina.Configuration
 {
@@ -14,36 +12,38 @@ namespace Catalina.Configuration
     {
         [NonSerialized] public static ConfigValues configValues = new ConfigValues();
 
-        public List<ulong> RoleIDs;
-        public List<ulong> AdminRoleIDs;
-        public List<ulong> CommandChannels;
+        public Dictionary<ulong,List<ulong>> RoleIDs;
+        public Dictionary<ulong,List<ulong>> AdminRoleIDs;
+        public Dictionary<ulong,List<ulong>> CommandChannels;
         public DiscordActivity DiscordActivity;
-        public string[] Prefixes;
+        public Dictionary<ulong,string> Prefixes;
+        public string Prefix;
         public string FolderPath;
         [NonSerialized] public string ConfigFolder;
         public string DiscordToken;
         public ulong? DevID;
-        [NonSerialized] public List<Response> Responses;
-        [NonSerialized] public List<Reaction> Reactions;
+        [NonSerialized] public Dictionary<ulong,List<Response>> Responses;
+        [NonSerialized] public Dictionary<ulong,List<Reaction>> Reactions;
         public Dictionary<ulong, DiscordRole> BasicRoleGuildID;
         //[NonSerialized] public Dictionary<string, string> Events;
         public ConfigValues()
         {
             DevID = 194439970797256706;
-            RoleIDs = new List<ulong>();
-            CommandChannels = new List<ulong>();
-            AdminRoleIDs = new List<ulong>();
+            RoleIDs = new ();
+            CommandChannels = new ();
+            AdminRoleIDs = new ();
             DiscordActivity = new DiscordActivity()
             {
                 Name = "The beat of your heart...",
                 ActivityType = ActivityType.ListeningTo
             };
-            Prefixes = new string[] { "ct!" };
+            Prefix = "c!";
+            Prefixes = new Dictionary<ulong, string>();
             FolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Catalina");
             ConfigFolder = Path.Combine(FolderPath, "Config");
             DiscordToken = null;
-            Responses = new List<Response>();
-            Reactions = new List<Reaction>();
+            Responses = new ();
+            Reactions = new ();
             BasicRoleGuildID = new();
             //Events = JsonConvert.DeserializeObject<Dictionary<string, string>>("{ \"AutoBulk\": \"06:00:00\", \"Read\": \"00:15:00\" }");
         }
@@ -91,7 +91,7 @@ namespace Catalina.Configuration
             if (File.Exists(ResponsesFile))
             {
                 var json = File.ReadAllText(ResponsesFile);
-                configValues.Responses = JsonConvert.DeserializeObject<List<Response>>(json);
+                configValues.Responses = JsonConvert.DeserializeObject<Dictionary<ulong,List<Response>>>(json);
                 Console.WriteLine(string.Format("{0,-25} {1}", "Read responses from", ResponsesFile));
             }
             else
@@ -99,14 +99,14 @@ namespace Catalina.Configuration
                 Console.WriteLine("No responses file found at {0}, creating one.", configValues.ConfigFolder);
                 SaveConfig();
                 var json = File.ReadAllText(ResponsesFile);
-                configValues.Responses = JsonConvert.DeserializeObject<List<Response>>(json);
+                configValues.Responses = JsonConvert.DeserializeObject<Dictionary<ulong, List<Response>>>(json);
                 Console.WriteLine(string.Format("{0,-25} {1}", "Read responses from", ResponsesFile));
             }
 
             if (File.Exists(ReactionsFile))
             {
                 var json = File.ReadAllText(ReactionsFile);
-                configValues.Reactions = JsonConvert.DeserializeObject<List<Reaction>>(json);
+                configValues.Reactions = JsonConvert.DeserializeObject<Dictionary<ulong, List<Reaction>>>(json);
                 Console.WriteLine(string.Format("{0,-25} {1}", "Read reactions from", ReactionsFile));
             }
             else
@@ -114,7 +114,7 @@ namespace Catalina.Configuration
                 Console.WriteLine("No reactions file found at {0}, creating one.", configValues.ConfigFolder);
                 SaveConfig();
                 var json = File.ReadAllText(ReactionsFile);
-                configValues.Responses = JsonConvert.DeserializeObject<List<Response>>(json);
+                configValues.Reactions = JsonConvert.DeserializeObject<Dictionary<ulong, List<Reaction>>>(json);
                 Console.WriteLine(string.Format("{0,-25} {1}", "Read responses from", ReactionsFile));
             }
 
