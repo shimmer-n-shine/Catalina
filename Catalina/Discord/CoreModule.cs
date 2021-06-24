@@ -310,13 +310,6 @@ namespace Catalina.Discord
                             var reactions = database.Reactions.Where(r => r.GuildID == ctx.Guild.Id);
                             if (reactions.Count() > 0)
                             {
-                                discordEmbed = new DiscordEmbedBuilder
-                                {
-                                    Title = "Done!",
-                                    Description = "Removed reaction from internal list of reactions!",
-                                    Color = DiscordColor.SpringGreen,
-                                }.Build();
-                                bool reactionsRemoved = true;
                                 List<Reaction> removedItems = new List<Reaction>();
                                 reactions.Where(reaction => reaction.MessageID == message.Id).ToList().ForEach(async reaction =>
                                 {
@@ -327,7 +320,6 @@ namespace Catalina.Discord
                                 removedItems.ForEach(item => database.Reactions.Remove(item));
 
                                 await database.SaveChangesAsync();
-                                await ctx.RespondAsync(discordEmbed);
 
                                 try
                                 {
@@ -344,16 +336,6 @@ namespace Catalina.Discord
                                     }.Build();
                                 }
                                 catch { }
-                                if (!reactionsRemoved) discordEmbed = new DiscordEmbedBuilder
-                                {
-                                    Title = "Done!",
-                                    Description = "Removed reaction from internal list of reactions!",
-                                    Color = DiscordColor.Yellow,
-                                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                                    {
-                                        Text = "but could not clear reactions."
-                                    }
-                                }.Build();
 
                                 await ctx.RespondAsync(discordEmbed);
                             }
@@ -437,21 +419,21 @@ namespace Catalina.Discord
             using var database = new DatabaseContextFactory().CreateDbContext();
 
             DiscordEmbed discordEmbed;
-            if (ctx.Member.IsOwner || ctx.Member.Roles.Any(t => t.Permissions == DSharpPlus.Permissions.Administrator))
+            if (ctx.Member.IsOwner || ctx.Member.Roles.Any(t => t.Permissions == DSharpPlus.Permissions.Administrator || t.Permissions == DSharpPlus.Permissions.ManageGuild))
             {
                 return PermissionCode.Qualify;
             }
-            if (!Discord.commandChannels.Contains(ctx.Channel) && !isAvailableEverywhere)
-            {
-                discordEmbed = new DiscordEmbedBuilder
-                {
-                    Title = "Sorry!",
-                    Description = "You're not allowed to run that command here.",
-                    Color = DiscordColor.Red
-                }.Build();
-                await ctx.RespondAsync(discordEmbed);
-                return PermissionCode.UnqualifyChannel;
-            }
+            //if (!Discord.commandChannels.Contains(ctx.Channel) && !isAvailableEverywhere)
+            //{
+            //    discordEmbed = new DiscordEmbedBuilder
+            //    {
+            //        Title = "Sorry!",
+            //        Description = "You're not allowed to run that command here.",
+            //        Color = DiscordColor.Red
+            //    }.Build();
+            //    await ctx.RespondAsync(discordEmbed);
+            //    return PermissionCode.UnqualifyChannel;
+            //}
             if (ctx.Member.Id == Convert.ToUInt64(Environment.GetEnvironmentVariable(AppProperties.DeveloperID)))
             {
                 return PermissionCode.Qualify;
@@ -460,10 +442,6 @@ namespace Catalina.Discord
 
 
             if (adminVerf.Any())
-            {
-                return PermissionCode.Qualify;
-            }
-            if (ctx.Member.IsOwner)
             {
                 return PermissionCode.Qualify;
             }
