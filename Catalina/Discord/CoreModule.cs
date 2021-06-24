@@ -58,10 +58,7 @@ namespace Catalina.Discord
                                     await member.Value.RevokeRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id), "Automatic revokal of the basic role");
                                 }
                             }
-                            catch
-                            {
-
-                            }
+                            catch { }
 
                         }
                         ConfigValues.BasicRoleGuildID.Remove(ctx.Guild.Id);
@@ -76,10 +73,7 @@ namespace Catalina.Discord
                         {
                             await member.Value.GrantRoleAsync(role, "Automatic assignment of the basic role");
                         }
-                        catch
-                        {
-
-                        }
+                        catch { }
                     }
 
                     discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: role.Color);
@@ -216,15 +210,26 @@ namespace Catalina.Discord
                         {
                             if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) //ConfigValues.Reactions.Select(reaction => reaction.Value.emoji).Contains(emoji) && )
                             {
-                                foreach (var reaction in ConfigValues.Reactions[ctx.Guild.Id])
+                                //var reactions = ConfigValues.Reactions[ctx.Guild.Id];
+                                List<Reaction> removedItems = new List<Reaction>();
+                                ConfigValues.Reactions[ctx.Guild.Id].Where(reaction => reaction.emojiName == emoji.Name).ToList().ForEach(async reaction =>
                                 {
+                                    removedItems.Add(reaction);
+
                                     try
                                     {
-                                        await message.DeleteReactionsEmojiAsync(emoji);
+                                        message = await ctx.Guild.GetChannel(reaction.channelID).GetMessageAsync(reaction.messageID);
+                                        try
+                                        {
+                                            await message.DeleteReactionsEmojiAsync(emoji);
+                                        }
+                                        catch { }
                                     }
                                     catch { }
-                                    ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
-                                }
+
+                                });
+
+                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
                                 ConfigValues.SaveConfig();
                                 discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
                                 await ctx.RespondAsync(discordEmbed);
