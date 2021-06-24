@@ -2,6 +2,7 @@
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using DSharpPlus.Exceptions;
 using DSharpPlus.Interactivity.Extensions;
 using System;
 using System.Collections.Generic;
@@ -14,25 +15,6 @@ namespace Catalina.Discord
     class CoreModule : BaseCommandModule
     {
         static ConfigValues ConfigValues => ConfigValues.configValues;
-
-        [Command("updateconfig")]
-        [Description("Update configuration for the bot. Only admins can execute this.")]
-        [Aliases("updateconf", "conf", "confupdate")]
-        public async Task UpdateConf(CommandContext ctx)
-        {
-            var verification = await IsVerifiedAsync(ctx, true);
-            if (verification == PermissionCode.Qualify)
-            {
-                var discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.Orange, title: "Updating Configuration Files...");
-                DiscordMessage message = await ctx.RespondAsync(discordEmbed);
-
-
-                ConfigValues.LoadConfig();
-                await Discord.UpdateChannels();
-                discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.SpringGreen, title: "Done!", description: "Sucessfully updated configuration files");
-                await message.ModifyAsync(discordEmbed);
-            }
-        }
 
         [Command("Setbasicrole")]
         [Description("Set the basic role for your server! This is an admin exclusive command.")]
@@ -76,12 +58,24 @@ namespace Catalina.Discord
                         catch { }
                     }
 
-                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: role.Color);
+                    discordEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Done!",
+                        Description = "Set the basic role for your server!",
+                        Color = role.Color
+                    }.Build();
+                        //Discord.CreateFancyMessage(title: "Done!", description: "Set the basic role for your server!", color: role.Color);
                     await ctx.RespondAsync(discordEmbed);
                 }
                 else
                 {
-                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The role you provided was invalid!", color: DiscordColor.Red);
+                    discordEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Sorry!",
+                        Description = "The role you provided was invalid!",
+                        Color = DiscordColor.Red
+                    }.Build();
+                        //Discord.CreateFancyMessage(title: "Sorry!", description: "The role you provided was invalid!", color: DiscordColor.Red);
                     await ctx.RespondAsync(discordEmbed);
                 }
             }
@@ -102,7 +96,13 @@ namespace Catalina.Discord
                 {
                     if (!ctx.Guild.CurrentMember.Roles.Any(r => r.Permissions.HasFlag(DSharpPlus.Permissions.ManageRoles) || r.Permissions.HasFlag(DSharpPlus.Permissions.Administrator)))
                     {
-                        discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
+                        discordEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Sorry!",
+                            Description = "I don't have permissions to manage roles.",
+                            Color = DiscordColor.Red
+                        }.Build();
+                            //CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
                         await ctx.RespondAsync(discordEmbed);
                         return;
                     }
@@ -115,14 +115,24 @@ namespace Catalina.Discord
 
                         if (message == null)
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You provided an invalid message link.", color: DiscordColor.Red);
+                            discordEmbed = discordEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Sorry!",
+                                Description = "You provided an invalid message link.",
+                                Color = DiscordColor.Red
+                            }.Build();
                             await ctx.RespondAsync(discordEmbed);
                             return;
                         }
                         
                         if (role != null && ctx.Guild.CurrentMember.Roles.All(r => r.Position < role.Position))
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
+                            discordEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Sorry!",
+                                Description = "I don't have permissions to manage roles.",
+                                Color = DiscordColor.Red
+                            }.Build();
                             await ctx.RespondAsync(discordEmbed);
                             return;
                         } 
@@ -130,7 +140,12 @@ namespace Catalina.Discord
 
                         if (message != null && emoji != null && role != null)
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
+                            discordEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Done!",
+                                Description = "Added to internal list of reactions",
+                                Color = role.Color
+                            }.Build();
                             await ctx.RespondAsync(discordEmbed);
                             var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
 
@@ -153,7 +168,12 @@ namespace Catalina.Discord
                         }
                         else
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The message link, role or reaction you provided was invalid!", color: DiscordColor.Red);
+                            discordEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Sorry!",
+                                Description = "The message link, role or reaction you provided was invalid!",
+                                Color = DiscordColor.Red
+                            }.Build();
                             await ctx.RespondAsync(discordEmbed);
                         }
                     }
@@ -172,12 +192,22 @@ namespace Catalina.Discord
                                 {
                                     if (ctx.Guild.CurrentMember.Roles.All(r => r.Position < role.Position))
                                     {
-                                        discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
+                                        discordEmbed = new DiscordEmbedBuilder
+                                        {
+                                            Title = "Sorry!",
+                                            Description = "I don't have permissions to manage roles.",
+                                            Color = DiscordColor.Red
+                                        }.Build();
                                         await ctx.RespondAsync(discordEmbed);
                                         return;
                                     }
 
-                                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
+                                    discordEmbed = new DiscordEmbedBuilder
+                                    {
+                                        Title = "Done!",
+                                        Description = "Added to internal list of reactions",
+                                        Color = role.Color
+                                    }.Build();
                                     await ctx.RespondAsync(discordEmbed);
                                     var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
                                     await message.CreateReactionAsync(emoji);
@@ -204,6 +234,12 @@ namespace Catalina.Discord
                     if (messageLink != null)
                     {
                         //in this case, message link is the reaction OR message to unlist.
+                        discordEmbed = new DiscordEmbedBuilder
+                        {
+                            Title = "Done!",
+                            Description = "Removed reaction from internal list of reactions!",
+                            Color = DiscordColor.SpringGreen,
+                        }.Build();
                         var emoji = Discord.GetEmojiFromString(messageLink);
                         var message = await Discord.GetMessageFromLinkAsync(ctx, messageLink);
                         if (emoji != null)
@@ -223,48 +259,111 @@ namespace Catalina.Discord
                                         {
                                             await message.DeleteReactionsEmojiAsync(emoji);
                                         }
+                                        catch (UnauthorizedException)
+                                        {
+                                            discordEmbed = new DiscordEmbedBuilder(discordEmbed)
+                                            {
+                                                Footer = new DiscordEmbedBuilder.EmbedFooter
+                                                {
+                                                    Text = "but could not remove reactions due to insufficient permissions."
+                                                }
+                                            }.Build();
+                                        }
                                         catch { }
                                     }
-                                    catch { }
+                                    catch
+                                    {
+                                        discordEmbed = new DiscordEmbedBuilder(discordEmbed)
+                                        {
+                                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                                            {
+                                                Text = "but could not remove reactions due to insufficient permissions."
+                                            }
+                                        }.Build();
+                                    }
 
                                 });
 
                                 removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
                                 ConfigValues.SaveConfig();
-                                discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
                                 await ctx.RespondAsync(discordEmbed);
                             }
                             else
                             {
-                                discordEmbed = Discord.CreateFancyMessage(title: "Error!", description: "You've not added any reactions to remove!", color: DiscordColor.Red);
+                                discordEmbed = new DiscordEmbedBuilder
+                                {
+                                    Title = "Sorry!",
+                                    Description = "You've not created any reactions to remove.",
+                                    Color = DiscordColor.Red
+                                }.Build();
                             }
                         }
                         else if (message != null)
                         {
                             if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
                             {
-                                if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains(message.Id))
+                                discordEmbed = new DiscordEmbedBuilder
                                 {
-                                    var reactions = ConfigValues.Reactions[ctx.Guild.Id].FindAll(r => r.messageID == message.Id);
+                                    Title = "Done!",
+                                    Description = "Removed reaction from internal list of reactions!",
+                                    Color = DiscordColor.SpringGreen,
+                                }.Build();
+                                bool reactionsRemoved = true;
+                                List<Reaction> removedItems = new List<Reaction>();
+                                ConfigValues.Reactions[ctx.Guild.Id].Where(reaction => reaction.messageID == message.Id).ToList().ForEach(async reaction =>
+                                {
+                                    removedItems.Add(reaction);
+                                });
+                                try
+                                {
                                     await message.DeleteAllReactionsAsync();
-                                    foreach (var reaction in reactions)
-                                    {
-                                        ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
-                                    }
-                                    ConfigValues.SaveConfig();
-                                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
-                                    await ctx.RespondAsync(discordEmbed);
                                 }
+                                catch (UnauthorizedException)
+                                {
+                                    discordEmbed = new DiscordEmbedBuilder(discordEmbed)
+                                    {
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            Text = "but could not clear reactions due to insufficient permissions."
+                                        }
+                                    }.Build();
+                                }
+                                catch { }
+                                
+                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
+                                ConfigValues.SaveConfig();
+                                if (!reactionsRemoved) discordEmbed = new DiscordEmbedBuilder
+                                {
+                                    Title = "Done!",
+                                    Description = "Removed reaction from internal list of reactions!",
+                                    Color = DiscordColor.Yellow,
+                                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                                    {
+                                        Text = "but could not clear reactions."
+                                    }
+                                }.Build();
+
+                                await ctx.RespondAsync(discordEmbed);
                             }
                             else
                             {
-                                discordEmbed = Discord.CreateFancyMessage(title: "Error!", description: "You've not added any reactions to remove!", color: DiscordColor.Red);
+                                discordEmbed = new DiscordEmbedBuilder
+                                {
+                                    Title = "Sorry!",
+                                    Description = "You've not created any reactions to remove.",
+                                    Color = DiscordColor.Red
+                                }.Build();
                             }
 
                         }
                         else
                         {
-                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The message link or reaction you provided was invalid!", color: DiscordColor.Red);
+                            discordEmbed = new DiscordEmbedBuilder
+                            {
+                                Title = "Sorry!",
+                                Description = "The message link or reaction you provided is invalid!",
+                                Color = DiscordColor.Red
+                            }.Build();
                             await ctx.RespondAsync(discordEmbed);
                         }
                         
@@ -292,7 +391,12 @@ namespace Catalina.Discord
                                         ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
                                         ConfigValues.SaveConfig();
 
-                                        discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
+                                        discordEmbed = new DiscordEmbedBuilder
+                                        {
+                                            Title = "Done!",
+                                            Description = "Removed from internal list of reactions",
+                                            Color = DiscordColor.SpringGreen
+                                        }.Build();
                                         await ctx.RespondAsync(discordEmbed);
                                     }
                                 }
@@ -304,7 +408,12 @@ namespace Catalina.Discord
                 }
                 else
                 {
-                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You didn't provide an argument! try `add` or `remove`!", color: DiscordColor.Red);
+                    discordEmbed = new DiscordEmbedBuilder
+                    {
+                        Title = "Sorry!",
+                        Description = "You didn't provide an argument!\ntry `add` or `remove`.",
+                        Color = DiscordColor.Red
+                    }.Build();
                     await ctx.RespondAsync(discordEmbed);
                 }
             }
@@ -319,7 +428,12 @@ namespace Catalina.Discord
             }
             if (!Discord.commandChannels.Contains(ctx.Channel) && !isAvailableEverywhere)
             {
-                discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "You're not allowed to run that command here.");
+                discordEmbed = new DiscordEmbedBuilder
+                {
+                    Title = "Sorry!",
+                    Description = "You're not allowed to run that command here.",
+                    Color = DiscordColor.Red
+                }.Build();
                 await ctx.RespondAsync(discordEmbed);
                 return PermissionCode.UnqualifyChannel;
             }
@@ -341,7 +455,12 @@ namespace Catalina.Discord
             {
                 return PermissionCode.Qualify;
             }
-            discordEmbed = Discord.CreateFancyMessage(color: DiscordColor.IndianRed, title: "Sorry!", description: "You're not allowed to run that command.");
+            discordEmbed = new DiscordEmbedBuilder
+            {
+                Title = "Sorry!",
+                Description = "You have insufficient permissions to run that command.",
+                Color = DiscordColor.Red
+            }.Build();
             await ctx.RespondAsync(discordEmbed);
             return PermissionCode.UnqualifyRole;
         }
