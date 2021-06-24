@@ -9,6 +9,8 @@ using Serilog;
 using Serilog.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static DSharpPlus.Entities.DiscordEmbedBuilder;
 
@@ -51,7 +53,6 @@ namespace Catalina.Discord
             });
 
             discord.GuildMemberAdded += Events.Discord_GuildMemberAdded;
-            //discord.MessageCreated += Events.Discord_MessageCreated;
             discord.MessageDeleted += Events.Discord_MessageDeleted;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
@@ -78,6 +79,180 @@ namespace Catalina.Discord
                 }
                 
             }
+
+        }
+
+        public static async Task<DiscordEmoji> GetEmojiFromMessage(CommandContext ctx)
+        {
+            DiscordEmbed discordEmbed;
+            discordEmbed = CreateFancyMessage(title: "Adding a new reaction!", description: "Please send the emoji to watch for", color: DiscordColor.CornflowerBlue);
+            await ctx.RespondAsync(discordEmbed);
+            var body = await ctx.Message.GetNextMessageAsync();
+
+
+            if (!body.TimedOut)
+            {
+                var emoji = GetEmojiFromString(body.Result.Content);
+                if (emoji != null)
+                {
+                    return emoji;
+                }
+                else
+                {
+                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The emoji you provided was invalid!", color: DiscordColor.Red);
+                    await SendFancyMessage(ctx.Channel, discordEmbed);
+                    return null;
+                }
+            }
+            else
+            {
+                discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                await SendFancyMessage(ctx.Channel, discordEmbed);
+                return null;
+            }
+        }
+
+        public static async Task<DiscordRole> GetRoleFromMessage(CommandContext ctx)
+        {
+            DiscordEmbed discordEmbed;
+            discordEmbed = CreateFancyMessage(title: "A new reaction!", description: "Please mention the role to assign", color: DiscordColor.CornflowerBlue);
+            await ctx.RespondAsync(discordEmbed);
+            var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
+
+            if (!body.TimedOut)
+            {
+                var role = GetRoleFromList(body.Result.MentionedRoles.ToList(), ctx);
+                if (role != null)
+                {
+                    return role;
+                }
+                else
+                {
+                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The role id you provided was invalid!");
+                    return null;
+                }
+            }
+            else
+            {
+                discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                await SendFancyMessage(ctx.Channel, discordEmbed);
+                return null;
+            }
+        }
+        public static DiscordEmoji GetEmojiFromString(string text)
+        {
+            var pattern = new Regex("([A-z_]|[0-9]){2,}");
+            try
+            {
+                var result = pattern.Match(text);
+                if (result.Success)
+                {
+                    var match = ':' + result.Value + ':';
+                    DiscordEmoji emoji = DiscordEmoji.FromName(discord, match, true);
+                    return emoji;
+                }
+                else
+                {
+                    try
+                    {
+                        DiscordEmoji emoji = DiscordEmoji.FromUnicode(discord, text);
+                        return emoji;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+            catch
+            {
+
+                return null;
+            }
+        }
+        public static DiscordRole GetRoleFromList(List<DiscordRole> roles, CommandContext ctx)
+        {
+            try
+            {
+                ulong id = Convert.ToUInt64(roles.First().Id);
+                return ctx.Guild.GetRole(id);
+
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static async Task<DiscordMessage> GetMessageFromLinkAsync(CommandContext ctx, string messageLink = null)
+        {
+            if (messageLink != null)
+            {
+                var messageID = GetMessageIDFromLink(messageLink);
+                var channelID = GetChannelIDFromLink(messageLink);
+                if (messageID != null && channelID != null)
+                {
+                    var message = await ctx.Guild.GetChannel((ulong)channelID).GetMessageAsync((ulong)messageID); //ctx.Guild.GetChannelAsync((ulong)channelID).GetMessageAsync((ulong)messageID);
+                    return message;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            else
+            {
+                DiscordEmbed discordEmbed;
+                discordEmbed = CreateFancyMessage(title: "A new reaction!", description: "Please enter the message link for the reaction", color: DiscordColor.CornflowerBlue);
+                await ctx.RespondAsync(discordEmbed);
+                var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
+
+                if (!body.TimedOut)
+                {
+                    var messageID = GetMessageIDFromLink(body.Result.Content);
+                    var channelID = GetChannelIDFromLink(body.Result.Content);
+                    if (messageID != null && channelID != null)
+                    {
+                        return await ctx.Guild.GetChannel((ulong)channelID).GetMessageAsync((ulong)messageID);
+                    }
+                    else
+                    {
+                        discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The message link you provided was invalid!");
+                        return null;
+                    }
+                }
+                else
+                {
+                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                    await SendFancyMessage(ctx.Channel, discordEmbed);
+                    return null;
+                }
+            }
+
+        }
+
+        public static ulong? GetMessageIDFromLink(string message)
+        {
+            try
+            {
+                var splitMessage = message.Split('/');
+                return Convert.ToUInt64(splitMessage.Last());
+
+            }
+            catch
+            { return null; }
+
+        }
+
+        public static ulong? GetChannelIDFromLink(string message)
+        {
+            try
+            {
+                var splitMessage = message.Split('/');
+                return Convert.ToUInt64(splitMessage[^2]);
+            }
+            catch { return null; }
         }
 
         public static async Task<DiscordMessage> SendMessage(string text, DiscordChannel channel)
@@ -106,12 +281,6 @@ namespace Catalina.Discord
             DateTime? timestamp = null
             )
         {
-            //var embedBuilder = new DiscordEmbedBuilder()
-            //{
-            //    Color = color,
-            //    Description = description,
-            //    Title = title
-            //};
             var embedBuilder = new DiscordEmbedBuilder();
 
             if (title != null) embedBuilder.Title = title;
@@ -125,9 +294,7 @@ namespace Catalina.Discord
             if (thumbnail != null) embedBuilder.Thumbnail = thumbnail;
             if (timestamp != null) embedBuilder.Timestamp = timestamp;
 
-
             return embedBuilder.Build();
-
         }
         
     }
