@@ -74,11 +74,19 @@ namespace Catalina.Discord
                     var matches = reactions.FindAll(r => r.messageID == e.Message.Id);
                     foreach (var match in matches)
                     {
-                        try
+                        var emoji = Discord.GetEmojiFromString(match.emojiName);
+
+                        if (emoji != null)
                         {
-                            await e.Message.CreateReactionAsync(DiscordEmoji.FromName(sender, match.emojiName));
+                            try
+                            {
+                                await e.Message.CreateReactionAsync(emoji);
+                            }
+                            catch
+                            {
+                                Console.WriteLine("Could not repopulate reactions after a message was cleared of reactions.");
+                            }
                         }
-                        catch { }
                     }
                 }
             }
