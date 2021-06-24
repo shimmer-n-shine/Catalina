@@ -55,11 +55,7 @@ namespace Catalina.Discord
                     {
                         await member.RevokeRoleAsync(e.Guild.GetRole(reaction.roleID), "Revoked role upon reaction");
                     }
-                    catch
-                    {
-
-                    }
-
+                    catch { }
                 }
             }
         }
