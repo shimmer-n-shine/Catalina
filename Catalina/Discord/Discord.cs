@@ -55,6 +55,7 @@ namespace Catalina.Discord
             discord.MessageDeleted += Events.Discord_MessageDeleted;
             discord.MessageReactionAdded += Events.Discord_ReactionAdded;
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
+            discord.MessageReactionsCleared += Events.Discord_ReactionsCleared;
 
             await discord.ConnectAsync(ConfigValues.DiscordActivity);
             await UpdateChannels();
@@ -140,11 +141,11 @@ namespace Catalina.Discord
     }
     public struct Reaction
     {
-        public Reaction(ulong messageID, ulong emojiID, ulong roleID, ulong ChannelID)
+        public Reaction(ulong messageID, string emojiName, ulong roleID, ulong ChannelID)
         {
-            this.messageID = messageID; this.emojiID = emojiID; this.roleID = roleID; this.channelID = ChannelID;
+            this.messageID = messageID; this.emojiName = emojiName; this.roleID = roleID; this.channelID = ChannelID;
         }
-        public ulong messageID; public ulong emojiID; public ulong roleID; public ulong channelID;
+        public ulong messageID; public string emojiName; public ulong roleID; public ulong channelID;
     }
     public struct Field
     {
