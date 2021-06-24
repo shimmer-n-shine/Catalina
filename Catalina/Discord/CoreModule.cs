@@ -103,28 +103,48 @@ namespace Catalina.Discord
             var verification = await IsVerifiedAsync(ctx, true);
             if (verification == PermissionCode.Qualify)
             {
+                
                 if (arg != null && arg.ToLower() == "add")
                 {
+                    if (!ctx.Guild.CurrentMember.Roles.Any(r => r.Permissions.HasFlag(DSharpPlus.Permissions.ManageRoles) || r.Permissions.HasFlag(DSharpPlus.Permissions.Administrator)))
+                    {
+                        discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
+                        await ctx.RespondAsync(discordEmbed);
+                        return;
+                    }
                     if (messageLink != null && emote != null && mention != null)
                     {
-                        var messageID = GetMessageIDFromLink(messageLink);
+                        var message = await GetMessageFromLinkAsync(ctx, messageLink);
                         var emoji = GetEmojiFromString(emote);
                         var mentions = ctx.Message.MentionedRoles.ToList();
                         var role = GetRoleFromList(mentions, ctx);
-                        DiscordMessage message = null;
-                        if (messageID != null) message = await GetMessageFromIDAsync(ctx, (ulong)messageID);
+
+                        if (message == null)
+                        {
+                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You provided an invalid message link.", color: DiscordColor.Red);
+                            await ctx.RespondAsync(discordEmbed);
+                            return;
+                        }
+                        
+                        if (role != null && ctx.Guild.CurrentMember.Roles.All(r => r.Position < role.Position))
+                        {
+                            discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
+                            await ctx.RespondAsync(discordEmbed);
+                            return;
+                        } 
 
 
                         if (message != null && emoji != null && role != null)
                         {
                             discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
                             await ctx.RespondAsync(discordEmbed);
-                            var reaction = new Reaction(message.Id, emoji.Id, role.Id, message.Channel.Id);
+                            var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
 
                             if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) 
                             {
                                 //var reactions = ConfigValues.Reactions.GetValueOrDefault(ctx.Guild.Id);
                                 //reactions.Add(reaction);
+                                
                                 ConfigValues.Reactions[ctx.Guild.Id].Add(reaction);
 
                             }
@@ -145,37 +165,40 @@ namespace Catalina.Discord
                     }
                     else
                     {
-                        var id = await GetMessageIDFromLinkAsync(ctx);
-                        if (id != null)
+                        var message = await GetMessageFromLinkAsync(ctx);
+                        if (message != null)
                         {
-                            var message = await GetMessageFromIDAsync(ctx, (ulong) id);
-                            if (message != null)
+                            var emoji = await GetEmojiFromMessage(ctx);
+
+                            if (emoji != null)
                             {
-                                var emoji = await GetEmojiFromMessage(ctx);
+                                var role = await GetRoleFromMessage(ctx);
 
-                                if (emoji != null)
+                                if (role != null)
                                 {
-                                    var role = await GetRoleFromMessage(ctx);
-
-                                    if (role != null)
+                                    if (ctx.Guild.CurrentMember.Roles.All(r => r.Position < role.Position))
                                     {
-                                        discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
+                                        discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "I don't have permissions to manage roles.", color: DiscordColor.Red);
                                         await ctx.RespondAsync(discordEmbed);
-                                        var reaction = new Reaction(message.Id, emoji.Id, role.Id, message.Channel.Id);
-                                        await message.CreateReactionAsync(emoji);
-
-                                        if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
-                                        {
-                                            ConfigValues.Reactions[ctx.Guild.Id].Add(reaction);
-                                        }
-                                        else
-                                        {
-                                            ConfigValues.Reactions.Add(ctx.Guild.Id, new() { reaction });
-                                        }
-
-
-                                        ConfigValues.SaveConfig();
+                                        return;
                                     }
+
+                                    discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Added reaction to list of reactions!", color: role.Color);
+                                    await ctx.RespondAsync(discordEmbed);
+                                    var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
+                                    await message.CreateReactionAsync(emoji);
+
+                                    if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
+                                    {
+                                        ConfigValues.Reactions[ctx.Guild.Id].Add(reaction);
+                                    }
+                                    else
+                                    {
+                                        ConfigValues.Reactions.Add(ctx.Guild.Id, new() { reaction });
+                                    }
+
+
+                                    ConfigValues.SaveConfig();
                                 }
                             }
                         }
@@ -188,9 +211,7 @@ namespace Catalina.Discord
                     {
                         //in this case, message link is the reaction OR message to unlist.
                         var emoji = GetEmojiFromString(messageLink);
-                        var messageID = GetMessageIDFromLink(messageLink);
-                        DiscordMessage message = null;
-                        if (messageID != null) message = await GetMessageFromIDAsync(ctx, (ulong)messageID);
+                        var message = await GetMessageFromLinkAsync(ctx, messageLink);
                         if (emoji != null)
                         {
                             if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) //ConfigValues.Reactions.Select(reaction => reaction.Value.emoji).Contains(emoji) && )
@@ -199,7 +220,6 @@ namespace Catalina.Discord
                                 {
                                     try
                                     {
-                                        message = await ctx.Guild.GetChannel(reaction.channelID).GetMessageAsync(reaction.messageID);
                                         await message.DeleteReactionsEmojiAsync(emoji);
                                     }
                                     catch { }
@@ -218,9 +238,9 @@ namespace Catalina.Discord
                         {
                             if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
                             {
-                                if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains( (ulong) messageID))
+                                if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains(message.Id))
                                 {
-                                    var reactions = ConfigValues.Reactions[ctx.Guild.Id].FindAll(r => r.messageID == messageID);
+                                    var reactions = ConfigValues.Reactions[ctx.Guild.Id].FindAll(r => r.messageID == message.Id);
                                     await message.DeleteAllReactionsAsync();
                                     foreach (var reaction in reactions)
                                     {
@@ -246,39 +266,34 @@ namespace Catalina.Discord
                     } 
                     else
                     {
-                        var id = await GetMessageIDFromLinkAsync(ctx);
-                       
-                        if (id != null)
+                        var message = await GetMessageFromLinkAsync(ctx);
+                        if (message != null)
                         {
-                            var message = await GetMessageFromIDAsync(ctx, (ulong) id);
-                            if (message != null)
+                            var emoji = await GetEmojiFromMessage(ctx);
+
+                            if (emoji != null)
                             {
-                                var emoji = await GetEmojiFromMessage(ctx);
 
-                                if (emoji != null)
+                                if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
                                 {
-
-                                    if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
+                                    if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains(message.Id) && ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.emojiName).Contains(emoji.Name))
                                     {
-                                        if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains((ulong)id) && ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.emojiID).Contains(emoji.Id))
+                                        var reaction = ConfigValues.Reactions[ctx.Guild.Id].Find(r => r.messageID == message.Id && r.emojiName == emoji.Name);
+                                        try
                                         {
-                                            var reaction = ConfigValues.Reactions[ctx.Guild.Id].Find(r => r.messageID == (ulong)id && r.emojiID == emoji.Id);
-                                            try
-                                            {
-                                                await message.DeleteReactionsEmojiAsync(await ctx.Guild.GetEmojiAsync(reaction.emojiID));
-                                            }
-                                            catch { }
-                                            ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
-                                            ConfigValues.SaveConfig();
-
-                                            discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
-                                            await ctx.RespondAsync(discordEmbed);
+                                            await message.DeleteReactionsEmojiAsync(GetEmojiFromString(emoji.Name));
                                         }
+                                        catch { }
+                                        ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
+                                        ConfigValues.SaveConfig();
+
+                                        discordEmbed = Discord.CreateFancyMessage(title: "Done!", description: "Removed reaction from list of reactions!", color: DiscordColor.SpringGreen);
+                                        await ctx.RespondAsync(discordEmbed);
                                     }
                                 }
                             }
-                            
                         }
+                            
                     }
                     
                 }
@@ -323,7 +338,7 @@ namespace Catalina.Discord
         public async Task<DiscordRole> GetRoleFromMessage(CommandContext ctx)
         {
             DiscordEmbed discordEmbed;
-            discordEmbed = Discord.CreateFancyMessage(title: "Adding a new reaction!", description: "Please mention the role to assign", color: DiscordColor.CornflowerBlue);
+            discordEmbed = Discord.CreateFancyMessage(title: "A new reaction!", description: "Please mention the role to assign", color: DiscordColor.CornflowerBlue);
             await ctx.RespondAsync(discordEmbed);
             var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
 
@@ -392,72 +407,84 @@ namespace Catalina.Discord
             }
         }
 
-        public async Task<ulong?> GetMessageIDFromLinkAsync(CommandContext ctx)
+        public async Task<DiscordMessage> GetMessageFromLinkAsync(CommandContext ctx, string messageLink = null)
         {
-            DiscordEmbed discordEmbed;
-            discordEmbed = Discord.CreateFancyMessage(title: "Adding a new reaction!", description: "Please enter the message link for the reaction", color: DiscordColor.CornflowerBlue);
-            await ctx.RespondAsync(discordEmbed);
-            var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
-
-            if (!body.TimedOut)
+            if (messageLink != null)
             {
-                var id = GetMessageIDFromLink(body.Result.Content);
-                if (id != null)
+                var messageID = GetMessageIDFromLink(messageLink);
+                var channelID = GetChannelIDFromLink(messageLink);
+                if (messageID != null && channelID != null)
                 {
-                    return id;
+                    var message = await ctx.Guild.GetChannel((ulong)channelID).GetMessageAsync((ulong) messageID); //ctx.Guild.GetChannelAsync((ulong)channelID).GetMessageAsync((ulong)messageID);
+                    return message;
                 }
                 else
                 {
-                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The message link you provided was invalid!");
                     return null;
                 }
             }
+
             else
             {
-                discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
-                await Discord.SendFancyMessage(ctx.Channel, discordEmbed);
-                return null;
+                DiscordEmbed discordEmbed;
+                discordEmbed = Discord.CreateFancyMessage(title: "A new reaction!", description: "Please enter the message link for the reaction", color: DiscordColor.CornflowerBlue);
+                await ctx.RespondAsync(discordEmbed);
+                var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
+
+                if (!body.TimedOut)
+                {
+                    var messageID = GetMessageIDFromLink(body.Result.Content);
+                    var channelID = GetChannelIDFromLink(body.Result.Content);
+                    if (messageID != null && channelID != null)
+                    {
+                        return await ctx.Guild.GetChannel((ulong)channelID).GetMessageAsync((ulong)messageID);
+                    }
+                    else
+                    {
+                        discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "The message link you provided was invalid!");
+                        return null;
+                    }
+                }
+                else
+                {
+                    discordEmbed = Discord.CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                    await Discord.SendFancyMessage(ctx.Channel, discordEmbed);
+                    return null;
+                }
             }
+            
         }
-        public async Task<DiscordMessage> GetMessageFromIDAsync(CommandContext ctx, ulong messageID)
-        {
-            DiscordMessage message = null;
-            var channels = ctx.Guild.Channels.Select(c => c.Value).Where(c => c.IsCategory != true && c.Type != DSharpPlus.ChannelType.Voice).ToList();
-            //.ForEach(async c =>
-            //{
-            //    try
-            //    {
-            //        message = await c.GetMessageAsync(messageID);
-            //    }
-            //    catch
-            //    {
+        //public async Task<DiscordMessage> GetMessageFromIDAsync(CommandContext ctx, ulong channelID, ulong messageID)
+        //{
+        //    DiscordMessage message = null;
+        //    try
+        //    {
+        //        message = await ctx.Guild.GetChannel(channelID).GetMessageAsync(messageID);
+        //    }
+        //    catch { }
+        //    //foreach (var channel in channels)
+        //    //{
+        //    //    try
+        //    //    {
+        //    //        message = await channel.GetMessageAsync(messageID);
+        //    //        break;
+        //    //    }
+        //    //    catch
+        //    //    {
 
-            //    }
-            //});
-
-            foreach (var channel in channels)
-            {
-                try
-                {
-                    message = await channel.GetMessageAsync(messageID);
-                    break;
-                }
-                catch
-                {
-
-                }
-            }
+        //    //    }
+        //    //}
              
-            if (message != null)
-            {
-                return message;
-            }
-            else
-            {
-                return null;
-            }
+        //    if (message != null)
+        //    {
+        //        return message;
+        //    }
+        //    else
+        //    {
+        //        return null;
+        //    }
 
-        }
+        //}
 
         public ulong? GetMessageIDFromLink(string message)
         {
@@ -468,10 +495,18 @@ namespace Catalina.Discord
                 
             }
             catch
-            {
-                return null;
-            }
+            { return null; }
             
+        }
+
+        public ulong? GetChannelIDFromLink(string message)
+        {
+            try
+            {
+                var splitMessage = message.Split('/');
+                return Convert.ToUInt64(splitMessage[^2]);
+            }
+            catch { return null; }
         }
 
         public static async Task<PermissionCode> IsVerifiedAsync(CommandContext ctx, bool isAdminCommand = false, bool isAvailableEverywhere = false)
