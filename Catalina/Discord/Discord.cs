@@ -279,7 +279,7 @@ namespace Catalina.Discord
             string imageURL = null,
             EmbedThumbnail thumbnail = null, 
             DateTime? timestamp = null
-            )
+        )
         {
             var embedBuilder = new DiscordEmbedBuilder();
 
