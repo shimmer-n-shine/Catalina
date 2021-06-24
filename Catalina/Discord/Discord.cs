@@ -155,12 +155,20 @@ namespace Catalina.Discord
                 {
                     try
                     {
-                        DiscordEmoji emoji = DiscordEmoji.FromUnicode(discord, text);
+                        DiscordEmoji emoji = DiscordEmoji.FromName(discord, text);
                         return emoji;
                     }
                     catch
                     {
-                        return null;
+                        try
+                        {
+                            DiscordEmoji emoji = DiscordEmoji.FromUnicode(discord, text);
+                            return emoji;
+                        }
+                        catch
+                        {
+                            return null;
+                        }
                     }
                 }
             }
