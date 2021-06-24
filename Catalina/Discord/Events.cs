@@ -1,5 +1,6 @@
 ﻿using Catalina.Configuration;
 using DSharpPlus;
+using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using Serilog;
 using System;
@@ -13,27 +14,30 @@ namespace Catalina.Discord
     {
         static ConfigValues ConfigValues => ConfigValues.configValues;
 
-        internal static Task Discord_GuildMemberRemoved(DiscordClient sender, GuildMemberRemoveEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal static async Task Discord_MessageCreated(DiscordClient sender, MessageCreateEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         internal static async Task Discord_ReactionAdded(DiscordClient sender, MessageReactionAddEventArgs e)
         {
-            
             if (ConfigValues.Reactions.ContainsKey(e.Guild.Id))
             {
                 var reactions = ConfigValues.Reactions[e.Guild.Id];
-                if (reactions.Select(reaction => reaction.messageID).Contains(e.Message.Id) && reactions.Select(reaction => reaction.emojiID).Contains(e.Emoji.Id) && !e.User.IsBot)
+                if (reactions.Select(reaction => reaction.messageID).Contains(e.Message.Id) && reactions.Select(reaction => reaction.emojiName).Contains(e.Emoji.Name) && !e.User.IsBot)
                 {
-                    var reaction = reactions.Find(r => r.messageID == e.Message.Id && r.emojiID == e.Emoji.Id);
+                    var reaction = reactions.Find(r => r.messageID == e.Message.Id && r.emojiName == e.Emoji.Name);
                     var member = await e.Guild.GetMemberAsync(e.User.Id);
-                    await member.GrantRoleAsync(e.Guild.GetRole(reaction.roleID), "Assigned role upon reaction");
+                    try
+                    {
+                        await member.GrantRoleAsync(e.Guild.GetRole(reaction.roleID), "Assigned role upon reaction");
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            await e.Message.DeleteReactionAsync(e.Emoji, member);
+                        }
+                        catch
+                        {
+
+                        }
+                    }
                 }
             }
         }
@@ -43,12 +47,39 @@ namespace Catalina.Discord
             if (ConfigValues.Reactions.ContainsKey(e.Guild.Id))
             {
                 var reactions = ConfigValues.Reactions[e.Guild.Id];
-                if (reactions.Select(reaction => reaction.messageID).Contains(e.Message.Id) && reactions.Select(reaction => reaction.emojiID).Contains(e.Emoji.Id) && !e.User.IsBot)
+                if (reactions.Select(reaction => reaction.messageID).Contains(e.Message.Id) && reactions.Select(reaction => reaction.emojiName).Contains(e.Emoji.Name) && !e.User.IsBot)
                 {
-                    var reaction = reactions.Find(r => r.messageID == e.Message.Id && r.emojiID == e.Emoji.Id);
+                    var reaction = reactions.Find(r => r.messageID == e.Message.Id && r.emojiName == e.Emoji.Name);
                     var member = await e.Guild.GetMemberAsync(e.User.Id);
-                    await member.RevokeRoleAsync(e.Guild.GetRole(reaction.roleID), "Revoked role upon reaction");
+                    try
+                    {
+                        await member.RevokeRoleAsync(e.Guild.GetRole(reaction.roleID), "Revoked role upon reaction");
+                    }
+                    catch
+                    {
 
+                    }
+
+                }
+            }
+        }
+
+        internal static async Task Discord_ReactionsCleared(DiscordClient sender, MessageReactionsClearEventArgs e)
+        {
+            if (ConfigValues.Reactions.ContainsKey(e.Guild.Id))
+            {
+                var reactions = ConfigValues.Reactions[e.Guild.Id];
+                if (reactions.Select(reaction => reaction.messageID).Contains(e.Message.Id))
+                {
+                    var matches = reactions.FindAll(r => r.messageID == e.Message.Id);
+                    foreach (var match in matches)
+                    {
+                        try
+                        {
+                            await e.Message.CreateReactionAsync(DiscordEmoji.FromName(sender, match.emojiName));
+                        }
+                        catch { }
+                    }
                 }
             }
         }
