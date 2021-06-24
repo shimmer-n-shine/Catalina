@@ -314,6 +314,10 @@ namespace Catalina.Discord
                                 {
                                     removedItems.Add(reaction);
                                 });
+                                
+                                
+                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
+                                ConfigValues.SaveConfig();
                                 try
                                 {
                                     await message.DeleteAllReactionsAsync();
@@ -329,9 +333,6 @@ namespace Catalina.Discord
                                     }.Build();
                                 }
                                 catch { }
-                                
-                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
-                                ConfigValues.SaveConfig();
                                 if (!reactionsRemoved) discordEmbed = new DiscordEmbedBuilder
                                 {
                                     Title = "Done!",
