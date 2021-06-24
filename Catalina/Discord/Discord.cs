@@ -1,5 +1,4 @@
-﻿using Catalina.Configuration;
-using DSharpPlus;
+﻿using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
@@ -12,13 +11,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static DSharpPlus.Entities.DiscordEmbedBuilder;
+using Catalina.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace Catalina.Discord
 {
     public class Discord
     {
-        static ConfigValues ConfigValues => ConfigValues.configValues;
         static SerilogLoggerFactory logFactory;
         public static DiscordClient discord;
         public static List<DiscordChannel?> commandChannels;
@@ -33,14 +32,14 @@ namespace Catalina.Discord
             {
                 MinimumLogLevel = Microsoft.Extensions.Logging.LogLevel.Debug,
                 Intents = DiscordIntents.All,
-                Token = ConfigValues.DiscordToken,
+                Token = Environment.GetEnvironmentVariable(AppProperties.DiscordToken),
                 TokenType = TokenType.Bot,
                 AlwaysCacheMembers = true,
                 LoggerFactory = logFactory
             });
             var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
             {
-                StringPrefixes = new[] { ConfigValues.Prefix },
+                StringPrefixes = new[] { Environment.GetEnvironmentVariable(AppProperties.BotPrefix) },
                 CaseSensitive = false,
             });
 
@@ -58,15 +57,28 @@ namespace Catalina.Discord
             discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
             discord.MessageReactionsCleared += Events.Discord_ReactionsCleared;
 
-            await discord.ConnectAsync(ConfigValues.DiscordActivity);
+            var discordActivity = new DiscordActivity
+            {
+                ActivityType = ActivityType.ListeningTo,
+                Name = "The beat of your heart..."
+            };
+
+            await discord.ConnectAsync(discordActivity);
             await UpdateChannels();
         }
         public static async Task UpdateChannels()
         {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
             commandChannels = new List<DiscordChannel>();
-            foreach (var server in ConfigValues.CommandChannels)
+            var guildProperties = database.GuildProperties.AsNoTracking();
+            if (guildProperties.All( g => string.IsNullOrEmpty(g.CommandChannelsSerialised)))
             {
-                foreach (var channel in server.Value)
+                return;
+            }
+            foreach (var channels in guildProperties.Where(g => !string.IsNullOrEmpty(g.CommandChannelsSerialised)).Select(g => g.CommandChannels))
+            {
+                foreach (var channel in channels)
                 {
                     try
                     {
@@ -156,12 +168,13 @@ namespace Catalina.Discord
                         Description = "The role you mentioned was invalid.",
                         Color = DiscordColor.Red
                     }.Build();
+                    await SendFancyMessage(ctx.Channel, discordEmbed);
                     return null;
                 }
             }
             else
             {
-                discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                discordEmbed = new DiscordEmbedBuilder()
                 {
                     Title = "Sorry!",
                     Description = "You took too long to respond!",
@@ -182,6 +195,7 @@ namespace Catalina.Discord
                     var match = ':' + result.Value + ':';
                     DiscordEmoji emoji = DiscordEmoji.FromName(discord, match, true);
                     return emoji;
+                    
                 }
                 else
                 {
@@ -243,8 +257,7 @@ namespace Catalina.Discord
 
             else
             {
-                DiscordEmbed discordEmbed;
-                discordEmbed = discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                DiscordEmbed discordEmbed = new DiscordEmbedBuilder()
                 {
                     Title = "Deriving message!",
                     Description = "Please enter a message link.",
@@ -263,18 +276,19 @@ namespace Catalina.Discord
                     }
                     else
                     {
-                        discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                        discordEmbed = new DiscordEmbedBuilder()
                         {
                             Title = "Sorry!",
                             Description = "The message link you provided was invalid!!",
                             Color = DiscordColor.Red
                         }.Build();
+                        await SendFancyMessage(ctx.Channel, discordEmbed);
                         return null;
                     }
                 }
                 else
                 {
-                    discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                    discordEmbed = new DiscordEmbedBuilder()
                     {
                         Title = "Sorry!",
                         Description = "You took too long to respond!",
@@ -323,59 +337,30 @@ namespace Catalina.Discord
         {
             return await discord.SendMessageAsync(channel, embed);
         }
-        //public static DiscordEmbed CreateFancyMessage(
-        //    string title = null,
-        //    string description = null,
-        //    string url = null,
-        //    EmbedAuthor author = null,
-        //    DiscordColor? color = null,
-        //    List<Field> fields = null,
-        //    EmbedFooter footer = null,
-        //    string imageURL = null,
-        //    EmbedThumbnail thumbnail = null, 
-        //    DateTime? timestamp = null
-        //)
-        //{
-        //    var embedBuilder = new DiscordEmbedBuilder();
+    }
+    //public struct Response
+    //{
+    //    public Response(string trigger, string response, string description = null, List<DiscordChannel> disallowedChannels = null)
+    //    {
+    //        this.trigger = trigger; this.response = response; this.description = description; this.disallowedChannels = disallowedChannels;
+    //    }
+    //    public string trigger; public string response; public string description; public List<DiscordChannel> disallowedChannels;
+    //}
+    //public struct Reaction
+    //{
+    //    public Reaction(ulong messageID, string emojiName, ulong roleID, ulong ChannelID)
+    //    {
+    //        this.messageID = messageID; this.emojiName = emojiName; this.roleID = roleID; this.channelID = ChannelID;
+    //    }
+    //    public ulong messageID; public string emojiName; public ulong roleID; public ulong channelID;
+    //}
+    //public struct Field
+    //{
 
-        //    if (title != null) embedBuilder.Title = title;
-        //    if (description != null) embedBuilder.Description = description;
-        //    if (url != null) embedBuilder.Url = url;
-        //    if (author != null) embedBuilder.Author = author;
-        //    if (color != null) embedBuilder.Color = (DiscordColor) color;
-        //    if (fields != null) fields.ForEach(field => embedBuilder.AddField(field.name, field.value, field.inline));
-        //    if (footer != null) embedBuilder.Footer = footer;
-        //    if (imageURL != null) embedBuilder.ImageUrl = imageURL;
-        //    if (thumbnail != null) embedBuilder.Thumbnail = thumbnail;
-        //    if (timestamp != null) embedBuilder.Timestamp = timestamp;
-
-        //    return embedBuilder.Build();
-        //}
-        
-    }
-    public struct Response
-    {
-        public Response(string trigger, string response, string description = null, List<DiscordChannel> disallowedChannels = null)
-        {
-            this.trigger = trigger; this.response = response; this.description = description; this.disallowedChannels = disallowedChannels;
-        }
-        public string trigger; public string response; public string description; public List<DiscordChannel> disallowedChannels;
-    }
-    public struct Reaction
-    {
-        public Reaction(ulong messageID, string emojiName, ulong roleID, ulong ChannelID)
-        {
-            this.messageID = messageID; this.emojiName = emojiName; this.roleID = roleID; this.channelID = ChannelID;
-        }
-        public ulong messageID; public string emojiName; public ulong roleID; public ulong channelID;
-    }
-    public struct Field
-    {
-
-        public Field(string name, string value, bool inline = false)
-        {
-            this.name = name; this.value = value; this.inline = inline;
-        }
-        public string name; public string value; public bool inline;
-    }
+    //    public Field(string name, string value, bool inline = false)
+    //    {
+    //        this.name = name; this.value = value; this.inline = inline;
+    //    }
+    //    public string name; public string value; public bool inline;
+    //}
 }

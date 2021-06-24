@@ -1,19 +1,17 @@
-﻿using Catalina.Configuration;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
-namespace Catalina.Core
+namespace Catalina
 {
     class Program
     {
-        static ConfigValues ConfigValues => ConfigValues.configValues;
         public static DateTime startTime;
         public static Random Random;
 
         static async Task Main(string[] args)
         {
             Random = new Random();
-            ConfigValues.LoadConfig();
+            AppProperties.LoadEnvVars();
             //TrackTimeLive();
 
             startTime = DateTime.UtcNow;

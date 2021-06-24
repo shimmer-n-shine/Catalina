@@ -1,26 +1,27 @@
-﻿using Catalina.Configuration;
+﻿using Catalina.Database;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
-using DSharpPlus.Interactivity.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Catalina.Database.Models;
 
 namespace Catalina.Discord
 {
     class CoreModule : BaseCommandModule
     {
-        static ConfigValues ConfigValues => ConfigValues.configValues;
 
         [Command("Setbasicrole")]
         [Description("Set the basic role for your server! This is an admin exclusive command.")]
         [Aliases("BasicRole", "basic")]
         public async Task SetBasicRole(CommandContext ctx, string mention)
         {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
             DiscordEmbed discordEmbed;
             var verification = await IsVerifiedAsync(ctx, true);
             if (verification == PermissionCode.Qualify)
@@ -29,25 +30,25 @@ namespace Catalina.Discord
                 {
                     var role = Discord.GetRoleFromList(ctx.Message.MentionedRoles.ToList(), ctx);
 
-                    if (ConfigValues.BasicRoleGuildID.ContainsKey(ctx.Guild.Id))
+                    if (database.GuildProperties.AsQueryable().Any(g => g.ID == ctx.Guild.Id && g.DefaultRole != null))  //(ConfigValues.BasicRoleGuildID.ContainsKey(ctx.Guild.Id))
                     {
+                        var roleID = database.GuildProperties.AsNoTracking().Where(g => g.ID == ctx.Guild.Id).Select(g => g.DefaultRole.Value).FirstOrDefault();
+                        var defaultRole = ctx.Guild.GetRole(roleID);
                         foreach (var member in ctx.Guild.Members)
                         {
                             try
                             {
-                                if (member.Value.Roles.Contains(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id)))
+                                if (member.Value.Roles.Select(r => r.Id).Contains(roleID))
                                 {
-                                    await member.Value.RevokeRoleAsync(ConfigValues.BasicRoleGuildID.GetValueOrDefault(ctx.Guild.Id), "Automatic revokal of the basic role");
+                                    await member.Value.RevokeRoleAsync(defaultRole, "Automatic revokal of default role"); ;
                                 }
                             }
                             catch { }
-
                         }
-                        ConfigValues.BasicRoleGuildID.Remove(ctx.Guild.Id);
                         
                     }
-                    ConfigValues.BasicRoleGuildID.Add(ctx.Guild.Id, role);
-                    ConfigValues.SaveConfig();
+                    database.GuildProperties.AsQueryable().First(g => g.ID == ctx.Guild.Id).DefaultRole = role.Id;  //ConfigValues.BasicRoleGuildID.Add(ctx.Guild.Id, role);
+                    await database.SaveChangesAsync();
 
                     foreach (var member in ctx.Guild.Members)
                     {
@@ -86,6 +87,8 @@ namespace Catalina.Discord
         [Aliases("Reaction")]
         public async Task AddReaction(CommandContext ctx, string arg = null, string messageLink = null, string emote = null, string mention = null)
         {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
             //Reaction reaction;
             DiscordEmbed discordEmbed;
             var verification = await IsVerifiedAsync(ctx, true);
@@ -147,22 +150,23 @@ namespace Catalina.Discord
                                 Color = role.Color
                             }.Build();
                             await ctx.RespondAsync(discordEmbed);
-                            var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
-
-                            if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) 
+                            var reaction = new Reaction
                             {
+                                MessageID = message.Id,
+                                EmojiName = emoji.Name,
+                                RoleID = role.Id,
+                                ChannelID = message.Channel.Id,
+                                GuildID = ctx.Guild.Id
+                            };
+                            
+                            //(message.Id, emoji.Name, role.Id, message.Channel.Id);
+
                                 //var reactions = ConfigValues.Reactions.GetValueOrDefault(ctx.Guild.Id);
                                 //reactions.Add(reaction);
-                                
-                                ConfigValues.Reactions[ctx.Guild.Id].Add(reaction);
 
-                            }
-                            else
-                            {
-                                ConfigValues.Reactions.Add(ctx.Guild.Id, new () { reaction });
-                            }
+                            database.Reactions.Add(reaction);
 
-                            ConfigValues.SaveConfig();
+                            await database.SaveChangesAsync();
                             await message.CreateReactionAsync(emoji);
 
                         }
@@ -209,20 +213,21 @@ namespace Catalina.Discord
                                         Color = role.Color
                                     }.Build();
                                     await ctx.RespondAsync(discordEmbed);
-                                    var reaction = new Reaction(message.Id, emoji.Name, role.Id, message.Channel.Id);
+
+                                    var reaction = new Reaction
+                                    {
+                                        MessageID = message.Id,
+                                        EmojiName = emoji.Name,
+                                        RoleID = role.Id,
+                                        ChannelID = message.Channel.Id,
+                                        GuildID = ctx.Guild.Id
+                                    };
                                     await message.CreateReactionAsync(emoji);
 
-                                    if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
-                                    {
-                                        ConfigValues.Reactions[ctx.Guild.Id].Add(reaction);
-                                    }
-                                    else
-                                    {
-                                        ConfigValues.Reactions.Add(ctx.Guild.Id, new() { reaction });
-                                    }
+                                    database.Reactions.Add(reaction);
 
-
-                                    ConfigValues.SaveConfig();
+                                    await database.SaveChangesAsync();
+                                    await message.CreateReactionAsync(emoji);
                                 }
                             }
                         }
@@ -244,17 +249,18 @@ namespace Catalina.Discord
                         var message = await Discord.GetMessageFromLinkAsync(ctx, messageLink);
                         if (emoji != null)
                         {
-                            if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) //ConfigValues.Reactions.Select(reaction => reaction.Value.emoji).Contains(emoji) && )
+                            var reactions = database.Reactions.AsNoTracking().Where(r => r.GuildID == ctx.Guild.Id);
+                            if (reactions.Count() > 0)  //(ConfigValues.Reactions.ContainsKey(ctx.Guild.Id)) //ConfigValues.Reactions.Select(reaction => reaction.Value.emoji).Contains(emoji) && )
                             {
                                 //var reactions = ConfigValues.Reactions[ctx.Guild.Id];
                                 List<Reaction> removedItems = new List<Reaction>();
-                                ConfigValues.Reactions[ctx.Guild.Id].Where(reaction => reaction.emojiName == emoji.Name).ToList().ForEach(async reaction =>
+                                reactions.Where(reaction => reaction.EmojiName == emoji.Name).ToList().ForEach( async reaction =>
                                 {
                                     removedItems.Add(reaction);
 
                                     try
                                     {
-                                        message = await ctx.Guild.GetChannel(reaction.channelID).GetMessageAsync(reaction.messageID);
+                                        message = await ctx.Guild.GetChannel(reaction.ChannelID).GetMessageAsync(reaction.MessageID);
                                         try
                                         {
                                             await message.DeleteReactionsEmojiAsync(emoji);
@@ -284,8 +290,9 @@ namespace Catalina.Discord
 
                                 });
 
-                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
-                                ConfigValues.SaveConfig();
+                                removedItems.ForEach(item => database.Reactions.Remove(item));
+
+                                await database.SaveChangesAsync();
                                 await ctx.RespondAsync(discordEmbed);
                             }
                             else
@@ -300,7 +307,8 @@ namespace Catalina.Discord
                         }
                         else if (message != null)
                         {
-                            if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
+                            var reactions = database.Reactions.Where(r => r.GuildID == ctx.Guild.Id);
+                            if (reactions.Count() > 0)
                             {
                                 discordEmbed = new DiscordEmbedBuilder
                                 {
@@ -310,14 +318,17 @@ namespace Catalina.Discord
                                 }.Build();
                                 bool reactionsRemoved = true;
                                 List<Reaction> removedItems = new List<Reaction>();
-                                ConfigValues.Reactions[ctx.Guild.Id].Where(reaction => reaction.messageID == message.Id).ToList().ForEach(async reaction =>
+                                reactions.Where(reaction => reaction.MessageID == message.Id).ToList().ForEach(async reaction =>
                                 {
                                     removedItems.Add(reaction);
                                 });
-                                
-                                
-                                removedItems.ForEach(item => ConfigValues.Reactions[ctx.Guild.Id].Remove(item));
-                                ConfigValues.SaveConfig();
+
+
+                                removedItems.ForEach(item => database.Reactions.Remove(item));
+
+                                await database.SaveChangesAsync();
+                                await ctx.RespondAsync(discordEmbed);
+
                                 try
                                 {
                                     await message.DeleteAllReactionsAsync();
@@ -378,19 +389,20 @@ namespace Catalina.Discord
 
                             if (emoji != null)
                             {
-
-                                if (ConfigValues.Reactions.ContainsKey(ctx.Guild.Id))
+                                var reactions = database.Reactions.Where(r => r.GuildID == ctx.Guild.Id);
+                                if (reactions.Count() > 0)
                                 {
-                                    if (ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.messageID).Contains(message.Id) && ConfigValues.Reactions[ctx.Guild.Id].Select(r => r.emojiName).Contains(emoji.Name))
+                                    if (reactions.Where(r => r.MessageID == message.Id).Count() > 0 && reactions.Where(r => r.EmojiName == emoji.Name).Count() > 0)
                                     {
-                                        var reaction = ConfigValues.Reactions[ctx.Guild.Id].Find(r => r.messageID == message.Id && r.emojiName == emoji.Name);
+                                        var reactionsToDelete = reactions.Where(r => r.MessageID == message.Id && r.EmojiName == emoji.Name).ToList(); //ConfigValues.Reactions[ctx.Guild.Id].Find(r => r.messageID == message.Id && r.emojiName == emoji.Name);
                                         try
                                         {
                                             await message.DeleteReactionsEmojiAsync(Discord.GetEmojiFromString(emoji.Name));
                                         }
                                         catch { }
-                                        ConfigValues.Reactions[ctx.Guild.Id].Remove(reaction);
-                                        ConfigValues.SaveConfig();
+
+                                        reactionsToDelete.ForEach(r => database.Reactions.Remove(r));
+                                        await database.SaveChangesAsync();
 
                                         discordEmbed = new DiscordEmbedBuilder
                                         {
@@ -422,6 +434,8 @@ namespace Catalina.Discord
 
         public static async Task<PermissionCode> IsVerifiedAsync(CommandContext ctx, bool isAdminCommand = false, bool isAvailableEverywhere = false)
         {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
             DiscordEmbed discordEmbed;
             if (ctx.Member.IsOwner || ctx.Member.Roles.Any(t => t.Permissions == DSharpPlus.Permissions.Administrator))
             {
@@ -438,21 +452,18 @@ namespace Catalina.Discord
                 await ctx.RespondAsync(discordEmbed);
                 return PermissionCode.UnqualifyChannel;
             }
-            if (ctx.Member.Id == ConfigValues.DevID)
+            if (ctx.Member.Id == Convert.ToUInt64(Environment.GetEnvironmentVariable(AppProperties.DeveloperID)))
             {
                 return PermissionCode.Qualify;
             }
-            var roleVerf = ctx.Member.Roles.Select(t => t.Id).Intersect(ConfigValues.RoleIDs[ctx.Guild.Id]);
-            var adminVerf = ctx.Member.Roles.Select(t => t.Id).Intersect(ConfigValues.AdminRoleIDs[ctx.Guild.Id]);
+            var adminVerf = ctx.Member.Roles.Select(t => t.Id).Intersect(database.GuildProperties.AsNoTracking().Where(g => g.ID == ctx.Guild.Id).Select(g => g.AdminRoleIDs).First());
+
+
             if (adminVerf.Any())
             {
                 return PermissionCode.Qualify;
             }
             if (ctx.Member.IsOwner)
-            {
-                return PermissionCode.Qualify;
-            }
-            if (roleVerf.Any() && !isAdminCommand)
             {
                 return PermissionCode.Qualify;
             }
