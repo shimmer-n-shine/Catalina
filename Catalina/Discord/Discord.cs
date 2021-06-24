@@ -85,7 +85,13 @@ namespace Catalina.Discord
         public static async Task<DiscordEmoji> GetEmojiFromMessage(CommandContext ctx)
         {
             DiscordEmbed discordEmbed;
-            discordEmbed = CreateFancyMessage(title: "Adding a new reaction!", description: "Please send the emoji to watch for", color: DiscordColor.CornflowerBlue);
+            discordEmbed = new DiscordEmbedBuilder()
+            {
+                Title = "Reactions!",
+                Description = "Please send the emoji to watch for:",
+                Color = DiscordColor.CornflowerBlue
+            }.Build();
+                //CreateFancyMessage(title: "Adding a new reaction!", description: "Please send the emoji to watch for", color: DiscordColor.CornflowerBlue);
             await ctx.RespondAsync(discordEmbed);
             var body = await ctx.Message.GetNextMessageAsync();
 
@@ -99,14 +105,25 @@ namespace Catalina.Discord
                 }
                 else
                 {
-                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The emoji you provided was invalid!", color: DiscordColor.Red);
+                    discordEmbed = new DiscordEmbedBuilder()
+                    {
+                        Title = "Sorry!",
+                        Description = "The emoji you provided was invalid!",
+                        Color = DiscordColor.Red
+                    }.Build();
+                        //CreateFancyMessage(title: "Sorry!", description: "The emoji you provided was invalid!", color: DiscordColor.Red);
                     await SendFancyMessage(ctx.Channel, discordEmbed);
                     return null;
                 }
             }
             else
             {
-                discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                {
+                    Title = "Sorry!",
+                    Description = "You took too long to respond!",
+                    Color = DiscordColor.Red
+                }.Build();
                 await SendFancyMessage(ctx.Channel, discordEmbed);
                 return null;
             }
@@ -115,7 +132,12 @@ namespace Catalina.Discord
         public static async Task<DiscordRole> GetRoleFromMessage(CommandContext ctx)
         {
             DiscordEmbed discordEmbed;
-            discordEmbed = CreateFancyMessage(title: "A new reaction!", description: "Please mention the role to assign", color: DiscordColor.CornflowerBlue);
+            discordEmbed = new DiscordEmbedBuilder
+            {
+                Title = "Deriving role!",
+                Description = "Please mention a role.",
+                Color = DiscordColor.CornflowerBlue
+            }.Build();
             await ctx.RespondAsync(discordEmbed);
             var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
 
@@ -128,13 +150,23 @@ namespace Catalina.Discord
                 }
                 else
                 {
-                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The role id you provided was invalid!");
+                    discordEmbed = new DiscordEmbedBuilder()
+                    {
+                        Title = "Sorry!",
+                        Description = "The role you mentioned was invalid.",
+                        Color = DiscordColor.Red
+                    }.Build();
                     return null;
                 }
             }
             else
             {
-                discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                {
+                    Title = "Sorry!",
+                    Description = "You took too long to respond!",
+                    Color = DiscordColor.Red
+                }.Build();
                 await SendFancyMessage(ctx.Channel, discordEmbed);
                 return null;
             }
@@ -212,7 +244,12 @@ namespace Catalina.Discord
             else
             {
                 DiscordEmbed discordEmbed;
-                discordEmbed = CreateFancyMessage(title: "A new reaction!", description: "Please enter the message link for the reaction", color: DiscordColor.CornflowerBlue);
+                discordEmbed = discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                {
+                    Title = "Deriving message!",
+                    Description = "Please enter a message link.",
+                    Color = DiscordColor.Red
+                }.Build();
                 await ctx.RespondAsync(discordEmbed);
                 var body = await ctx.Message.GetNextMessageAsync(new TimeSpan(0, 1, 0));
 
@@ -226,13 +263,23 @@ namespace Catalina.Discord
                     }
                     else
                     {
-                        discordEmbed = CreateFancyMessage(title: "Sorry!", description: "The message link you provided was invalid!");
+                        discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                        {
+                            Title = "Sorry!",
+                            Description = "The message link you provided was invalid!!",
+                            Color = DiscordColor.Red
+                        }.Build();
                         return null;
                     }
                 }
                 else
                 {
-                    discordEmbed = CreateFancyMessage(title: "Sorry!", description: "You took too long to respond.", color: DiscordColor.Red);
+                    discordEmbed = discordEmbed = new DiscordEmbedBuilder()
+                    {
+                        Title = "Sorry!",
+                        Description = "You took too long to respond!",
+                        Color = DiscordColor.Red
+                    }.Build();
                     await SendFancyMessage(ctx.Channel, discordEmbed);
                     return null;
                 }
@@ -276,34 +323,34 @@ namespace Catalina.Discord
         {
             return await discord.SendMessageAsync(channel, embed);
         }
-        public static DiscordEmbed CreateFancyMessage(
-            string title = null,
-            string description = null,
-            string url = null,
-            EmbedAuthor author = null,
-            DiscordColor? color = null,
-            List<Field> fields = null,
-            EmbedFooter footer = null,
-            string imageURL = null,
-            EmbedThumbnail thumbnail = null, 
-            DateTime? timestamp = null
-        )
-        {
-            var embedBuilder = new DiscordEmbedBuilder();
+        //public static DiscordEmbed CreateFancyMessage(
+        //    string title = null,
+        //    string description = null,
+        //    string url = null,
+        //    EmbedAuthor author = null,
+        //    DiscordColor? color = null,
+        //    List<Field> fields = null,
+        //    EmbedFooter footer = null,
+        //    string imageURL = null,
+        //    EmbedThumbnail thumbnail = null, 
+        //    DateTime? timestamp = null
+        //)
+        //{
+        //    var embedBuilder = new DiscordEmbedBuilder();
 
-            if (title != null) embedBuilder.Title = title;
-            if (description != null) embedBuilder.Description = description;
-            if (url != null) embedBuilder.Url = url;
-            if (author != null) embedBuilder.Author = author;
-            if (color != null) embedBuilder.Color = (DiscordColor) color;
-            if (fields != null) fields.ForEach(field => embedBuilder.AddField(field.name, field.value, field.inline));
-            if (footer != null) embedBuilder.Footer = footer;
-            if (imageURL != null) embedBuilder.ImageUrl = imageURL;
-            if (thumbnail != null) embedBuilder.Thumbnail = thumbnail;
-            if (timestamp != null) embedBuilder.Timestamp = timestamp;
+        //    if (title != null) embedBuilder.Title = title;
+        //    if (description != null) embedBuilder.Description = description;
+        //    if (url != null) embedBuilder.Url = url;
+        //    if (author != null) embedBuilder.Author = author;
+        //    if (color != null) embedBuilder.Color = (DiscordColor) color;
+        //    if (fields != null) fields.ForEach(field => embedBuilder.AddField(field.name, field.value, field.inline));
+        //    if (footer != null) embedBuilder.Footer = footer;
+        //    if (imageURL != null) embedBuilder.ImageUrl = imageURL;
+        //    if (thumbnail != null) embedBuilder.Thumbnail = thumbnail;
+        //    if (timestamp != null) embedBuilder.Timestamp = timestamp;
 
-            return embedBuilder.Build();
-        }
+        //    return embedBuilder.Build();
+        //}
         
     }
     public struct Response
