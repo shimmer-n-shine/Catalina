@@ -117,19 +117,6 @@ namespace Catalina.Configuration
                 configValues.Reactions = JsonConvert.DeserializeObject<Dictionary<ulong, List<Reaction>>>(json);
                 Console.WriteLine(string.Format("{0,-25} {1}", "Read responses from", ReactionsFile));
             }
-
-            //if (File.Exists(EventsFile))
-            //{
-            //    var json = File.ReadAllText(EventsFile);
-            //    configValues.Events = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-            //    Console.WriteLine(string.Format("{0,-25} {1}", "Read events from", EventsFile));
-            //}
-            //else
-            //{
-            //    Console.WriteLine("No events file found at {0}, creating one.", configValues.ConfigFolder);
-            //    configValues.Events = configValues.Events = JsonConvert.DeserializeObject<Dictionary<string, string>>("{ \"AutoBulk\": \"06:00:00\", \"Read\": \"00:15:00\" }");
-            //    File.WriteAllText(EventsFile, JsonConvert.SerializeObject(this.Events, Formatting.Indented));
-            //}
         }
     }
 }
