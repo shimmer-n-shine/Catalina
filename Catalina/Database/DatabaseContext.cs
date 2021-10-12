@@ -11,17 +11,5 @@ namespace Catalina.Database
         public DbSet<GuildProperty> GuildProperties { get; set; }
         public DbSet<Response> Responses { get; set; }
         public DbSet<Reaction> Reactions { get; set; }
-
-        public async Task AddReactionAsync(Reaction reaction)
-        {
-            Reactions.Add(reaction);
-            await SaveChangesAsync();
-        }
-        public async Task RemoveReactionAsync(Reaction reaction)
-        {
-            Reactions.Remove(reaction);
-            await SaveChangesAsync();
-        }
-
     }
 }
