@@ -1,96 +1,96 @@
-﻿using DSharpPlus;
-using DSharpPlus.CommandsNext;
-using DSharpPlus.Entities;
-using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Enums;
-using DSharpPlus.Interactivity.Extensions;
-using Serilog;
-using Serilog.Extensions.Logging;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
+using Discord;
+using Fergun.Interactive;
+using Discord.WebSocket;
+using Discord.Commands;
+using System.Reflection;
+using NLog;
+using System.Threading;
 
 namespace Catalina.Discord
 {
     public class Discord
     {
-        static SerilogLoggerFactory logFactory;
-        public static DiscordClient discord;
-        public static List<DiscordChannel?> commandChannels;
+        public static DiscordSocketClient discord;
+        public static List<IGuildChannel?> commandChannels;
+        public static InteractiveService interactivity;
+        public static CommandService commandService;
         public static async Task SetupClient()
         {
-            Log.Logger = new LoggerConfiguration().WriteTo.Console()
-                .MinimumLevel.Is(Serilog.Events.LogEventLevel.Debug)
-                .CreateLogger();
-            logFactory = new SerilogLoggerFactory();
-
-            discord = new DiscordClient(new DiscordConfiguration()
+            var logger = LogManager.GetCurrentClassLogger();
+            
+            discord = new DiscordSocketClient(new DiscordSocketConfig()
             {
-                MinimumLogLevel = Microsoft.Extensions.Logging.LogLevel.Debug,
-                Intents = DiscordIntents.All,
-                Token = Environment.GetEnvironmentVariable(AppProperties.DiscordToken),
-                TokenType = TokenType.Bot,
-                AlwaysCacheMembers = true,
-                LoggerFactory = logFactory
-            });
-            discord.UseCommandsNext(new CommandsNextConfiguration()
-            {
-                StringPrefixes = new[] { Environment.GetEnvironmentVariable(AppProperties.BotPrefix) },
-                CaseSensitive = false,
+                LogLevel = LogSeverity.Debug,
+                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.All , //remove all later
+                //Token = Environment.GetEnvironmentVariable(AppProperties.DiscordToken),
+                //TokenType = TokenType.Bot,
+                AlwaysDownloadUsers = true,
             });
 
-            //commands.RegisterCommands<CoreModule>();
-
-            discord.UseInteractivity(new InteractivityConfiguration()
+            commandService = new CommandService(new CommandServiceConfig
             {
-                PollBehaviour = PollBehaviour.DeleteEmojis,
-                Timeout = TimeSpan.FromSeconds(30)
+                DefaultRunMode = RunMode.Async,
+                CaseSensitiveCommands = false,
+                LogLevel = LogSeverity.Debug,
+                IgnoreExtraArgs = false,
             });
 
-            //discord.GuildMemberAdded += Events.Discord_GuildMemberAdded;
-            //discord.MessageDeleted += Events.Discord_MessageDeleted;
-            //discord.MessageReactionAdded += Events.Discord_ReactionAdded;
-            //discord.MessageReactionRemoved += Events.Discord_ReactionRemoved;
-            //discord.MessageReactionsCleared += Events.Discord_ReactionsCleared;
+            await commandService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
 
-            var discordActivity = new DiscordActivity
-            {
-                ActivityType = ActivityType.ListeningTo,
-                Name = "The beat of your heart..."
-            };
+            interactivity = new InteractiveService(discord as BaseSocketClient, TimeSpan.FromSeconds(30));
 
-            await discord.ConnectAsync(discordActivity);
-            await UpdateChannels();
+
+
+            discord.UserJoined += Events.Discord_GuildMemberAdded;
+            discord.MessageDeleted += Events.Discord_MessageDeleted;
+            discord.MessageReceived += Events.Discord_MessageCreated;
+            discord.ReactionAdded += Events.Discord_ReactionAdded;
+            discord.ReactionRemoved += Events.Discord_ReactionRemoved;
+            discord.ReactionsCleared += Events.Discord_ReactionsCleared;
+            discord.Ready += Events.Discord_Ready;
+
+            discord.Log += Events.Discord_Log;
+
+            await discord.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
+
+            await discord.StartAsync();
         }
-        public static async Task UpdateChannels()
+        public static void UpdateChannels()
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            new Thread(() =>
+            {
+                using var database = new DatabaseContextFactory().CreateDbContext();
+                commandChannels = new List<IGuildChannel>();
+                var guildProperties = database.GuildProperties.AsNoTracking();
 
-            commandChannels = new List<DiscordChannel>();
-            var guildProperties = database.GuildProperties.AsNoTracking();
-            if (guildProperties.All(g => string.IsNullOrEmpty(g.CommandChannelsSerialised)))
-            {
-                return;
-            }
-            foreach (var channels in guildProperties.Where(g => !string.IsNullOrEmpty(g.CommandChannelsSerialised)).Select(g => g.CommandChannels))
-            {
-                foreach (var channel in channels)
+                if (guildProperties.All(g => string.IsNullOrEmpty(g.CommandChannelsSerialised)))
                 {
-                    try
-                    {
-                        commandChannels.Add(await discord.GetChannelAsync(channel));
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Information(e.GetType() + " error when getting channel id " + channel);
-                    }
+                    return;
                 }
+                foreach (var guild in guildProperties.Where(g => !string.IsNullOrEmpty(g.CommandChannelsSerialised)))
+                {
+                    foreach (var channel in guild.CommandChannels)
+                    {
+                        var discordGuild = discord.GetGuild(guild.ID);
+                        try
+                        {
+                            commandChannels.Add(discordGuild.GetTextChannel(channel));
+                        }
+                        catch (Exception e)
+                        {
+                            LogManager.GetCurrentClassLogger().Info(e, "Error when getting channel id " + channel);
+                        }
+                    }
 
-            }
-
+                }
+            }).Start();
         }
     }
 }
