@@ -1,6 +1,5 @@
 ﻿using Catalina.Database.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace Catalina.Database
 {
