@@ -9,22 +9,22 @@ namespace Catalina.Discord
 {
     public static class Utils
     {
-        public class InformationMessage
+        public class InformationMessage 
         {
             public string Body;
-            public string Title;
+            public string Title = "Info";
             public Color Color = DiscordColor.Blue;
             public IUser User;
 
             public static implicit operator Embed(InformationMessage message) => new EmbedBuilder
             {
-                Title = "Hey!",
+                Title = message.Title,
                 Color = message.Color,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                    Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
+                    Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
             }.Build();
         }
@@ -32,17 +32,19 @@ namespace Catalina.Discord
         public class AcknowledgementMessage
         {
             public string Body;
+            public string Title = "Success!";
+            public Color Color = DiscordColor.Green;
             public IUser User;
 
             public static implicit operator Embed(AcknowledgementMessage message) => new EmbedBuilder
             {
-                Title = "Yay!",
-                Color = DiscordColor.Green,
+                Title = message.Title,
+                Color = message.Color,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                    Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
+                    Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
             }.Build();
         }
@@ -50,35 +52,37 @@ namespace Catalina.Discord
         public class WarningMessage
         {
             public string Body;
+            public string Title = "Warning:";
             public IUser User;
 
             public static implicit operator Embed(WarningMessage message) => new EmbedBuilder
             {
-                Title = "Wait!",
+                Title = message.Title,
                 Color = DiscordColor.Yellow,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                    Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
+                    Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
             }.Build();
         }
         public class ErrorMessage
         {
             public string Body;
+            public string Title = "Uh oh.";
             public IUser User;
             public Exception Exception = null;
 
             public static implicit operator Embed(ErrorMessage message) => new EmbedBuilder
             {
-                Title = "Oh No!",
+                Title = message.Title,
                 Color = DiscordColor.Red,
                 Description = message.Exception is not null ? message.Exception.ToString() : message.Body,
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                    Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
+                    Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
             }.Build();
         }
@@ -86,11 +90,12 @@ namespace Catalina.Discord
         public class QueryMessage
         {
             public string Body;
+            public string Title = "Wait.";
             public IUser User;
 
             public static implicit operator Embed(QueryMessage message) => new EmbedBuilder
             {
-                Title = "Question:",
+                Title = message.Title,
                 Color = DiscordColor.Lilac,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder

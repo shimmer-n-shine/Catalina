@@ -1,5 +1,4 @@
-﻿using Catalina.Discord;
-using Catalina.Discord.Commands.Preconditions;
+﻿using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Commands;
 using System.Threading.Tasks;
@@ -15,12 +14,20 @@ namespace Catalina.Discord.Commands
         [Summary("Pong!")]
         public async Task PingMe()
         {
-            var embed = new Utils.AcknowledgementMessage
+            Embed embed = new Utils.WarningMessage
             {
-                Body = "Pong!",
+                Title = "Pong!",
+                Body = "Latency: " + Discord.discord.Latency + " ms",
                 User = Context.User
             };
-            await Context.Message.ReplyAsync(embed: embed);
+            var message = await Context.Message.ReplyAsync(embed: embed);
+            embed = new Utils.AcknowledgementMessage
+            {
+                Title = "Pong!",
+                Body = "Latency: " + (message.Timestamp - Context.Message.Timestamp + System.TimeSpan.FromMilliseconds(Discord.discord.Latency)).TotalMilliseconds + " ms",
+                User = Context.User
+            };
+            await message.ModifyAsync(msg => msg.Embed = embed);
         }
     }
 }
