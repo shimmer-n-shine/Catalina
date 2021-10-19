@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Fergun.Interactive;
 
 namespace Catalina.Discord
 {
@@ -13,7 +12,8 @@ namespace Catalina.Discord
         public class InformationMessage
         {
             public string Body;
-            public Color Color = DiscordColor.Aquamarine;
+            public string Title;
+            public Color Color = DiscordColor.Blue;
             public IUser User;
 
             public static implicit operator Embed(InformationMessage message) => new EmbedBuilder
@@ -37,7 +37,7 @@ namespace Catalina.Discord
             public static implicit operator Embed(AcknowledgementMessage message) => new EmbedBuilder
             {
                 Title = "Yay!",
-                Color = DiscordColor.SapGreen,
+                Color = DiscordColor.Green,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
@@ -55,7 +55,7 @@ namespace Catalina.Discord
             public static implicit operator Embed(WarningMessage message) => new EmbedBuilder
             {
                 Title = "Wait!",
-                Color = DiscordColor.Orange,
+                Color = DiscordColor.Yellow,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
