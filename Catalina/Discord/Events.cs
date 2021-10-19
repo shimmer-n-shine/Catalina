@@ -1,8 +1,5 @@
 ﻿using Discord;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Fergun.Interactive;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 using Catalina.Database;
@@ -62,16 +59,48 @@ namespace Catalina.Discord
         internal static Task Discord_Log(LogMessage msg)
         {
             var logger = NLog.LogManager.GetCurrentClassLogger();
-            return msg.Severity switch
+
+            switch (msg.Severity)
             {
-                LogSeverity.Critical => Task.Run(() => logger.Fatal(msg.Exception, msg.Message, msg.Source)),
-                LogSeverity.Debug => Task.Run(() => logger.Debug(msg.Exception, msg.Source, msg.Message)),
-                LogSeverity.Error => Task.Run(() => logger.Error(msg.Exception, msg.Message, msg.Source)),
-                LogSeverity.Info => Task.Run(() => logger.Info(msg.Exception, msg.Message, msg.Source)),
-                LogSeverity.Verbose => Task.Run(() => logger.Debug(msg.Exception, msg.Message, msg.Source)),
-                LogSeverity.Warning => Task.Run(() => logger.Warn(msg.Exception, msg.Message, msg.Source)),
-                _ => Task.CompletedTask
+                case LogSeverity.Critical:
+                    if (msg.Exception is not null)
+                        logger.Fatal(msg.Exception, $"{msg.Message}");
+                    else
+                        logger.Fatal($"{msg.Message}");
+                    break;
+                case LogSeverity.Debug:
+                    if (msg.Exception is not null)
+                        logger.Debug(msg.Exception, $"{msg.Source}");
+                    else
+                        logger.Debug($"{msg.Message}");
+                    break;
+                case LogSeverity.Error:
+                    if (msg.Exception is not null)
+                        logger.Error(msg.Exception, $"{msg.Message}");
+                    else
+                        logger.Error($"{msg.Message}");
+                    break;
+                case LogSeverity.Info:
+                    if (msg.Exception is not null)
+                        logger.Info(msg.Exception, $"{msg.Message}");
+                    else
+                        logger.Info($"{msg.Message}");
+                    break;
+                case LogSeverity.Verbose:
+                    if (msg.Exception is not null)
+                        logger.Debug(msg.Exception, $"{msg.Message}");
+                    else
+                        logger.Debug($"{msg.Message}");
+                    break;
+                case LogSeverity.Warning:
+                    if (msg.Exception is not null)
+                        logger.Warn(msg.Exception, $"{msg.Message}");
+                    else
+                        logger.Warn($"{msg.Message}");
+                    break;
             };
+
+            return Task.CompletedTask;
         }
 
         internal static async Task Discord_Ready()
