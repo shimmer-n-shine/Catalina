@@ -4,7 +4,7 @@ namespace Catalina.Discord
 {
     public static class DiscordColor
     {
-        #region catalina black and whites
+        #region Darks and Lights
         /// <summary>
         /// Represents no color, or #000000;
         /// </summary>
@@ -41,7 +41,7 @@ namespace Catalina.Discord
         public static Color VeryDarkGray { get; } = new Color(0x313F47);
         #endregion
 
-        #region Discord branding colors
+        #region Discord Branding Colors
         // https://discord.com/branding
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Catalina.Discord
         public static Color DiscordRed { get; } = new Color(0xED4245);
         #endregion
 
-        #region Catalina color-scheme
+        #region Catalina's Colour Scheme
         /// <summary>
         /// A pinky-red, or #F13472.
         /// </summary>
