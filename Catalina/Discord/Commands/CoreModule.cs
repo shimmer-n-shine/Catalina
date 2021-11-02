@@ -21,10 +21,13 @@ namespace Catalina.Discord.Commands
                 User = Context.User
             };
             var message = await Context.Message.ReplyAsync(embed: embed);
+            var latency = (message.Timestamp - Context.Message.Timestamp
+                + System.TimeSpan.FromMilliseconds(Discord.discord.Latency)).TotalMilliseconds;
+
             embed = new Utils.AcknowledgementMessage
             {
                 Title = "Pong!",
-                Body = "Latency: " + (message.Timestamp - Context.Message.Timestamp + System.TimeSpan.FromMilliseconds(Discord.discord.Latency)).TotalMilliseconds + " ms",
+                Body = "Latency: " + latency + " ms",
                 User = Context.User
             };
             await message.ModifyAsync(msg => msg.Embed = embed);
