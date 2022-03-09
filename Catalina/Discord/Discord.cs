@@ -30,8 +30,6 @@ namespace Catalina.Discord
             {
                 LogLevel = LogSeverity.Verbose,
                 GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.All, //remove all later
-                //Token = Environment.GetEnvironmentVariable(AppProperties.DiscordToken),
-                //TokenType = TokenType.Bot,
                 AlwaysDownloadUsers = true,
             });
 
@@ -47,7 +45,6 @@ namespace Catalina.Discord
                 LogLevel = LogSeverity.Verbose
             });
 
-            interactionService.AddTypeConverter<bool?>(new NullableBoolTypeConverter());
             interactionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
             await interactionService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
