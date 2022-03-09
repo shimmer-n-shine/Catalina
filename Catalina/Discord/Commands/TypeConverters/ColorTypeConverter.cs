@@ -2,8 +2,6 @@
 using Discord.Interactions;
 using System;
 using System.Threading.Tasks;
-//using DrawingColor = System.Drawing.Color;
-//using Color = Discord.Color;
 
 namespace Catalina.Discord.Commands.TypeConverters
 {
