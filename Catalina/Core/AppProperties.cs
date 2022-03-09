@@ -10,6 +10,7 @@ namespace Catalina
         public const string BotPrefix = "BOTPREFIX";
         public const string DiscordToken = "DISCTOKEN";
         public const string DeveloperID = "DEVID";
+        public const string DeveloperGuildID = "DEVGUILDID";
 
 
         public static void LoadEnvVars()

@@ -1,28 +1,27 @@
 ﻿using Catalina.Discord.Commands.Preconditions;
 using Discord;
-using Discord.Commands;
+using Discord.Interactions;
+using System;
 using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands
 {
-    [Group, Name("Core Functionality"), Remarks("The commands required for catalina to function.")]
-    [RequireRole(AccessLevel.User)]
-    public class CoreModule : ModuleBase
+    public class CoreModule : InteractionModuleBase
     {
-
-        [Command("Ping")]
-        [Summary("Pong!")]
+        [RequirePrivilege(AccessLevel.User)]
+        [SlashCommand("ping", "Pong!")]
         public async Task PingMe()
         {
+            var originalTime = DateTime.UtcNow;
             Embed embed = new Utils.WarningMessage
             {
                 Title = "Pong!",
                 Body = "Latency: " + Discord.discord.Latency + " ms",
                 User = Context.User
             };
-            var message = await Context.Message.ReplyAsync(embed: embed);
-            var latency = (message.Timestamp - Context.Message.Timestamp
-                + System.TimeSpan.FromMilliseconds(Discord.discord.Latency)).TotalMilliseconds;
+            await RespondAsync(embed: embed);
+            var message = await Context.Interaction.GetOriginalResponseAsync();
+            var latency = (message.Timestamp - originalTime).TotalMilliseconds;
 
             embed = new Utils.AcknowledgementMessage
             {
@@ -30,7 +29,7 @@ namespace Catalina.Discord.Commands
                 Body = "Latency: " + latency + " ms",
                 User = Context.User
             };
-            await message.ModifyAsync(msg => msg.Embed = embed);
+            await Context.Interaction.ModifyOriginalResponseAsync(msg => msg.Embed = embed);
         }
     }
 }

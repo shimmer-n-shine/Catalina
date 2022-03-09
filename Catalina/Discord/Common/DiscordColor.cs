@@ -1,4 +1,6 @@
 ﻿using Discord;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Catalina.Discord
 {
@@ -121,5 +123,19 @@ namespace Catalina.Discord
         /// </summary>
         public static Color Lilac { get; } = new Color(0xC8A2C8);
         #endregion
+
+        public static Color FromName(string input)
+        {
+            var fields = typeof(DiscordColor).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (var prop in fields)
+            {
+                if (input.ToLower().Equals(prop.Name.ToLower()))
+                {
+                    return (Color) prop.GetValue(null);
+                }
+            }
+            return Color.Default;
+        }
+
     }
 }

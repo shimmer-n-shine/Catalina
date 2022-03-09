@@ -12,7 +12,6 @@ namespace Catalina
         {
             Random = new Random();
             AppProperties.LoadEnvVars();
-            //TrackTimeLive();
 
             startTime = DateTime.UtcNow;
             await Discord.Discord.SetupClient();

@@ -4,54 +4,66 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Catalina.Database;
 using Discord.Commands;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Discord.Interactions;
 
 namespace Catalina.Discord
 {
     class Events
     {
 
-        internal static async Task Discord_ReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
+        internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
-        internal static async Task Discord_ReactionRemoved(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
+        internal static async Task ReactionRemoved(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
-        internal static async Task Discord_MessageCreated(SocketMessage arg)
+        internal static async Task MessageCreated(SocketMessage arg)
         {
-
-            if (arg.Author.IsBot ||
-                arg.Author.IsWebhook ||
-                arg.Author.DiscriminatorValue == 0000 ||
-                arg is not SocketUserMessage message) return;
-
-            CommandContext context = new CommandContext(Discord.discord, message);
-            string prefix = Environment.GetEnvironmentVariable(AppProperties.BotPrefix);
-            if (message.Content.StartsWith(prefix)) {
-                await Discord.commandService.ExecuteAsync(context, prefix.Length, null);
-            }
+            using var database = new DatabaseContextFactory().CreateDbContext();
 
         }
 
-        internal static async Task Discord_ReactionsCleared(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
+        internal static async Task ReactionsCleared(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
-        internal static async Task Discord_GuildMemberAdded(SocketGuildUser user)
+        internal static async Task GuildMemberAdded(SocketGuildUser user)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
-        internal static async Task Discord_MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
+        internal static async Task MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
+        }
+
+        internal static async Task InteractionCreated(SocketInteraction socketInteraction)
+        {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
+            var context = new SocketInteractionContext(Discord.discord, socketInteraction);
+            await TickGuild(context);
+            await Discord.interactionService.ExecuteCommandAsync(context, null);
         }
 
         internal static async Task GuildPingAsync(ulong guildID)
+        {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+        }
+
+        internal static async Task LeftGuild(SocketGuild arg)
+        {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+        }
+
+        internal static async Task JoinedGuild(SocketGuild arg)
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
         }
@@ -103,11 +115,30 @@ namespace Catalina.Discord
             return Task.CompletedTask;
         }
 
-        internal static async Task Discord_Ready()
+        internal static async Task Ready()
         {
-            await Discord.discord.SetGameAsync(type: ActivityType.Watching, name: "you sleep.");
-            Discord.UpdateChannels();
-            NLog.LogManager.GetCurrentClassLogger().Info("Hallo!");
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID))) 
+            {
+                if (ulong.TryParse(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID), out ulong guildID)) 
+                {
+                    await Discord.interactionService.RegisterCommandsToGuildAsync(guildID);
+                }
+            }
+            
+            await Discord.discord.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
+            NLog.LogManager.GetCurrentClassLogger().Info("Discord Ready!");
+        }
+
+        internal static async Task TickGuild(IInteractionContext context)
+        {
+            using var database = new DatabaseContextFactory().CreateDbContext();
+
+            if (database.GuildProperties.Find(context.Guild.Id) == null)
+            {
+                database.GuildProperties.Add(new Database.Models.GuildProperty { ID = context.Guild.Id });
+
+                await database.SaveChangesAsync();
+            }
         }
     }
 }
