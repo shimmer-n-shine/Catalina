@@ -33,11 +33,11 @@ namespace Catalina.Discord.Commands.Preconditions
 
             if (ctx.User is IGuildUser user)
             {
-                if (ctx.Guild.OwnerId == user.Id)
+                if (ctx.Guild.OwnerId == user.Id || user.GuildPermissions.Administrator)
                 {
                     return AccessLevel.SuperAdministrator;
                 }
-                if (user.GuildPermissions.Administrator)
+                if (user.GuildPermissions.ManageChannels && user.GuildPermissions.ManageGuild && user.GuildPermissions.BanMembers)
                 {
                     return AccessLevel.Administrator;
                 }
