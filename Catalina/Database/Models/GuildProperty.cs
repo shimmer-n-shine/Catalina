@@ -7,7 +7,6 @@ namespace Catalina.Database.Models
     {
         [Key]
         public ulong ID { get; set; }
-        public string Prefix { get; set; }
         public List<Role> Roles { get; set; } = new List<Role>();
     }
 }
