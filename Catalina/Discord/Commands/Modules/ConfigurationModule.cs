@@ -14,7 +14,88 @@ namespace Catalina.Discord.Commands.Modules
     [Group("config", "Guild configurations")]
     public class ConfigurationModule : InteractionModuleBase
     {
-        [Group("role", "Guild role configurations")]
+        [Group("starboard", "Guild starboard configuration")]
+        public class StarboardConfiguration : InteractionModuleBase
+        {
+            [SlashCommand("channel", "Set starboard channel for guild")]
+            public async Task SetStarboardChannel([Autocomplete(typeof(ChannelSelector))] string channel)
+            {
+                ulong channelId;
+                try
+                {
+                    if (!string.IsNullOrEmpty(channel)) channelId = ulong.Parse(channel);
+                }
+                catch
+                {
+                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { Exception = new System.ArgumentException("did not pass a valid channel.") });
+                    return;
+                }
+
+                using var database = new DatabaseContextFactory().CreateDbContext();
+                var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+
+                guildProperties.StarBoardChannel = channel is null ? null : ulong.Parse(channel);
+
+                await database.SaveChangesAsync();
+                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+            }
+            [SlashCommand("emoji", "Set starboard emoji for guild")]
+            public async Task SetStarboardEmoji(string emoji)
+            {
+                using var database = new DatabaseContextFactory().CreateDbContext();
+                var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+                IEmote emote;
+                
+
+                try
+                {
+                   emote = Emoji.Parse(emoji);
+                }
+                catch
+                {
+                    try
+                    {
+                        emote = Emote.Parse(emoji);
+                        try
+                        {
+                            await Context.Guild.GetEmoteAsync((emote as Emote).Id);
+                        }
+                        catch
+                        {
+                            throw new System.ArgumentException("emote is not from this guild");
+                        }
+                    }
+                    catch
+                    {
+                        throw new System.ArgumentException("did not pass a valid emoji");
+                    }
+                }
+                guildProperties.StarboardEmoji = Database.Models.Emoji.Parse(emote, Context.Guild);
+
+                await database.SaveChangesAsync();
+                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+            }
+            [SlashCommand("threshhold", "Set starboard threshhold for guild")]
+            public async Task SetStarboardThreshhold(int threshhold)
+            {
+                if (threshhold <= 0)
+                {
+                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { Exception = new System.ArgumentException("Threshhold cannot be less than 1.")});
+                    return;
+                }
+                using var database = new DatabaseContextFactory().CreateDbContext();
+                var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+
+                guildProperties.StarboardThreshhold = threshhold;
+
+                await database.SaveChangesAsync();
+                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+            }
+        }
+
+
+
+        [Group("role", "Guild role configuration")]
 
         public class RoleConfiguration : InteractionModuleBase
         {
