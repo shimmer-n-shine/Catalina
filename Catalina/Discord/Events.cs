@@ -4,18 +4,43 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Catalina.Database;
 using Discord.Commands;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Discord.Interactions;
+using System.Linq;
 
 namespace Catalina.Discord
 {
     class Events
     {
-
-        internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
+        internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
+            if (reaction.User.Value.IsBot || reaction.User.Value.Discriminator == "0000") return;
+
             using var database = new DatabaseContextFactory().CreateDbContext();
+
+            var guild = (channel.Value as IGuildChannel).Guild;
+            if (database.GuildProperties.Any(g => g.ID == guild.Id))
+            {
+                Database.Models.GuildProperty guildProperty = null;
+                try
+                {
+                    guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g.ID == guild.Id);
+                } 
+                catch
+                {
+
+                }
+                
+
+                var emoji = Database.Models.Emoji.Parse(reaction.Emote, guild);
+
+                if (emoji.NameOrID == guildProperty.StarboardEmoji.NameOrID)
+                {
+                    await Starboard.ProcessVote(guildProperty, await message.GetOrDownloadAsync(), reaction.User.Value);
+                }
+            }
+            
+
         }
 
         internal static async Task ReactionRemoved(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
@@ -124,7 +149,6 @@ namespace Catalina.Discord
                     await Discord.interactionService.RegisterCommandsToGuildAsync(guildID);
                 }
             }
-            
             await Discord.discord.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
             NLog.LogManager.GetCurrentClassLogger().Info("Discord Ready!");
         }
@@ -135,7 +159,7 @@ namespace Catalina.Discord
 
             if (database.GuildProperties.Find(context.Guild.Id) == null)
             {
-                database.GuildProperties.Add(new Database.Models.GuildProperty { ID = context.Guild.Id });
+                database.GuildProperties.Add(new Database.Models.GuildProperty { ID = context.Guild.Id , StarboardEmoji = database.Emojis.First(e => e.NameOrID == ":star:") });
 
                 await database.SaveChangesAsync();
             }
