@@ -18,23 +18,13 @@ namespace Catalina.Discord.Commands.Modules
         public class StarboardConfiguration : InteractionModuleBase
         {
             [SlashCommand("channel", "Set starboard channel for guild")]
-            public async Task SetStarboardChannel([Autocomplete(typeof(ChannelSelector))] string channel)
+            public async Task SetStarboardChannel([ChannelTypes(ChannelType.Text)] IChannel? channel = null)
             {
-                ulong channelId;
-                try
-                {
-                    if (!string.IsNullOrEmpty(channel)) channelId = ulong.Parse(channel);
-                }
-                catch
-                {
-                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { Exception = new System.ArgumentException("did not pass a valid channel.") });
-                    return;
-                }
 
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
-                guildProperties.StarBoardChannel = channel is null ? null : ulong.Parse(channel);
+                guildProperties.StarboardChannelID = channel?.Id;
 
                 await database.SaveChangesAsync();
                 await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
@@ -70,9 +60,16 @@ namespace Catalina.Discord.Commands.Modules
                         throw new System.ArgumentException("did not pass a valid emoji");
                     }
                 }
-                guildProperties.StarboardEmoji = Database.Models.Emoji.Parse(emote, Context.Guild);
+                if (database.Emojis.Any(e => e.NameOrID == Database.Models.Emoji.Parse(emote, Context.Guild).NameOrID)) {
+                    guildProperties.StarboardEmoji = database.Emojis.First(e => e.NameOrID == Database.Models.Emoji.Parse(emote, Context.Guild).NameOrID);
+                }
+                else
+                {
+                    guildProperties.StarboardEmoji = Database.Models.Emoji.Parse(emote, Context.Guild);
+                }
 
                 await database.SaveChangesAsync();
+                
                 await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
             }
             [SlashCommand("threshhold", "Set starboard threshhold for guild")]
