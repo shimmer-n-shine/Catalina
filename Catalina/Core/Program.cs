@@ -5,18 +5,20 @@ namespace Catalina
 {
     class Program
     {
-        public static DateTime startTime;
-        public static Random Random;
-
         static async Task Main(string[] args)
         {
-            Random = new Random();
+            ProgramData.Random = new Random();
             AppProperties.LoadEnvVars();
-            //TrackTimeLive();
 
-            startTime = DateTime.UtcNow;
+            ProgramData.StartTime = DateTime.UtcNow;
             await Discord.Discord.SetupClient();
             await Task.Delay(-1);
         }
+    }
+
+    static class ProgramData
+    {
+        public static DateTime StartTime;
+        public static Random Random;
     }
 }
