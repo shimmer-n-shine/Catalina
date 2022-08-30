@@ -44,53 +44,6 @@ namespace Catalina.Discord.Commands.TypeConverters
                 context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = context.User, Exception = new ArgumentException() }, ephemeral: true);
                 return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
             }
-
-            Color? result = null;
-
-            string[] split;
-
-            if (input.Contains(", "))
-            {
-                split = input.Split(", ");
-            }
-            else if (input.Contains(','))
-            {
-                split = input.Split(",");
-            }
-            else
-            {
-                split = input.Split(" ");
-            }
-
-            try
-            {
-                split[0] = split[0].Trim();
-                split[1] = split[1].Trim();
-                split[2] = split[2].Trim();
-            }
-            catch
-            {
-                context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = context.User, Exception = new ArgumentException() }, ephemeral: true);
-                return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
-            }
-            
-
-            if (!int.TryParse(split[0], out int r))
-            {
-                return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
-            }
-            if (!int.TryParse(split[1], out int g))
-            {
-                return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
-            }
-            if (!int.TryParse(split[2], out int b))
-            {
-                return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
-            }
-
-            result = new Color(r, g, b);
-
-            return Task.FromResult(TypeConverterResult.FromSuccess(result.Value));
         }
     }
 }

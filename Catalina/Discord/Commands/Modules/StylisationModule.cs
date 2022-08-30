@@ -54,9 +54,7 @@ namespace Catalina.Discord.Commands.Modules
                 else
                 {
                     await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new UnauthorizedAccessException() }, ephemeral: true);
-
                 }
-
                 
             }
             catch
@@ -120,32 +118,5 @@ namespace Catalina.Discord.Commands.Modules
             }
         }
 
-
-
-        //[SlashCommand("name", "Change role name")]
-        //public async Task ListRoles()
-        //{
-        //    using var database = new DatabaseContextFactory().CreateDbContext();
-        //    var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
-
-        //    EmbedBuilder embed = new Utils.InformationMessage { Title = $"Configured roles for {Context.Guild.Name}: ", User = Context.User };
-
-        //    foreach (var r in guildProperties.Roles.Where(r => r.IsColourable || r.IsRenamabale || r.IsAutomaticallyAdded))
-        //    {
-        //        var role = Context.Guild.GetRole(r.ID);
-        //        List<string> properties = new List<string>();
-
-        //        if (r.IsAutomaticallyAdded) properties.Add("Automatic");
-        //        if (r.IsRenamabale) properties.Add("Renamable");
-        //        if (r.IsColourable) properties.Add("Colourable");
-
-        //        properties[0] = " - " + properties[0];
-        //        var fieldValue = string.Join(", ", properties);
-        //        embed.AddField($"{role.Name}", fieldValue);
-        //    };
-
-
-        //    await RespondAsync(embed: embed.Build());
-        //}
     }
 }
