@@ -7,6 +7,6 @@
         public ulong MessageID { get; set; }
         public ulong RoleID { get; set; }
         public ulong ChannelID { get; set; }
-        public string EmojiName { get; set; }
+        public Emoji Emoji { get; set; }
     }
 }
