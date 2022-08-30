@@ -16,7 +16,7 @@ namespace Catalina.Discord
             public Color Color = DiscordColor.Blue;
             public IUser User;
 
-            public static implicit operator Embed(InformationMessage message) => new EmbedBuilder
+            public static implicit operator EmbedBuilder(InformationMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = message.Color,
@@ -26,7 +26,9 @@ namespace Catalina.Discord
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
                     Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
-            }.Build();
+            };
+
+            public static implicit operator Embed(InformationMessage message) => ((EmbedBuilder) message).Build();
         }
 
         public class AcknowledgementMessage
@@ -36,7 +38,7 @@ namespace Catalina.Discord
             public Color Color = DiscordColor.Green;
             public IUser User;
 
-            public static implicit operator Embed(AcknowledgementMessage message) => new EmbedBuilder
+            public static implicit operator EmbedBuilder(AcknowledgementMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = message.Color,
@@ -46,7 +48,9 @@ namespace Catalina.Discord
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
                     Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
-            }.Build();
+            };
+
+            public static implicit operator Embed(AcknowledgementMessage message) => ((EmbedBuilder)message).Build();
         }
 
         public class WarningMessage
@@ -55,7 +59,7 @@ namespace Catalina.Discord
             public string Title = "Warning:";
             public IUser User;
 
-            public static implicit operator Embed(WarningMessage message) => new EmbedBuilder
+            public static implicit operator EmbedBuilder(WarningMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = DiscordColor.Yellow,
@@ -65,7 +69,9 @@ namespace Catalina.Discord
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
                     Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
-            }.Build();
+            };
+
+            public static implicit operator Embed(WarningMessage message) => ((EmbedBuilder)message).Build();
         }
         public class ErrorMessage
         {
@@ -74,7 +80,7 @@ namespace Catalina.Discord
             public IUser User;
             public Exception Exception = null;
 
-            public static implicit operator Embed(ErrorMessage message) => new EmbedBuilder
+            public static implicit operator EmbedBuilder(ErrorMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = DiscordColor.Red,
@@ -84,7 +90,9 @@ namespace Catalina.Discord
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
                     Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
                 }
-            }.Build();
+            };
+
+            public static implicit operator Embed(ErrorMessage message) => ((EmbedBuilder)message).Build();
         }
 
         public class QueryMessage
@@ -93,7 +101,7 @@ namespace Catalina.Discord
             public string Title = "Wait.";
             public IUser User;
 
-            public static implicit operator Embed(QueryMessage message) => new EmbedBuilder
+            public static implicit operator EmbedBuilder(QueryMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = DiscordColor.Lilac,
@@ -103,13 +111,14 @@ namespace Catalina.Discord
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
                     Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
                 }
-            }.Build();
+            };
+
+            public static implicit operator Embed(QueryMessage message) => ((EmbedBuilder)message).Build();
         }
 
         public static async Task<IMessage> QueryUser(ICommandContext ctx)
         {
-            var message = await Discord.interactivity.NextMessageAsync();
-                //GetNextMessageAsync(new TimeSpan(0, 1, 0));
+            var message = await Discord.interactiveService.NextMessageAsync();
 
             if (message.IsSuccess)
             {
@@ -125,10 +134,6 @@ namespace Catalina.Discord
                 await ctx.Message.ReplyAsync(embed: embed);
             }
             return null;
-        }
-
-        public static void GetImagesFromMessage(ICommandContext ctx)
-        {
         }
 
         public static IEmote GetEmojiFromString(string text)
