@@ -42,15 +42,15 @@ namespace Catalina.Discord.Commands.Autocomplete
                 var names = results.Select(r => r.Name).ToList();
 
 
-                Dictionary<string, int> orderedPastas = new();
+                Dictionary<string, int> orderedResults = new();
 
                 names.ForEach(x =>
                 {
                     var confidence = FuzzyString.ComparisonMetrics.LevenshteinDistance(value, x);
-                    orderedPastas.Add(x, confidence);
+                    orderedResults.Add(x, confidence);
                 });
 
-                var searchResults = orderedPastas.OrderBy(x => x.Value);
+                var searchResults = orderedResults.OrderBy(x => x.Value);
 
                 if (searchResults.Any())
                 {
