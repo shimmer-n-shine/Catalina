@@ -22,11 +22,11 @@ public class Emoji
             {
                 throw new System.ArgumentException("External emoji invalid or not from current guild");
             }
-            
+
         }
-        else if (emote is DiscordNET.Emoji internalEmote) 
+        else if (emote is DiscordNET.Emoji internalEmote)
         {
-            return new Emoji { Type = EmojiType.External, NameOrID = EmojiOne.EmojiOne.ToShort(internalEmote.Name) };
+            return new Emoji { Type = EmojiType.Internal, NameOrID = EmojiOne.EmojiOne.ToShort(internalEmote.Name) };
         }
         else
         {
@@ -39,7 +39,8 @@ public class Emoji
         {
             try
             {
-                return await guild.GetEmoteAsync(ulong.Parse(emoji.NameOrID));
+                var emote = await guild.GetEmoteAsync(ulong.Parse(emoji.NameOrID));
+                return emote;
             }
             catch
             {
