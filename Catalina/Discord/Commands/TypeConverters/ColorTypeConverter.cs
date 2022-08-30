@@ -27,7 +27,7 @@ namespace Catalina.Discord.Commands.TypeConverters
 
             try
             {
-                if (DiscordColor.FromName(input).Equals(Color.Default))
+                if (CatalinaColours.FromName(input).Equals(Color.Default))
                 {
                     var c = System.Drawing.ColorTranslator.FromHtml(input);
 
@@ -35,7 +35,7 @@ namespace Catalina.Discord.Commands.TypeConverters
                 }
                 else
                 {
-                    return Task.FromResult(TypeConverterResult.FromSuccess(DiscordColor.FromName(input)));
+                    return Task.FromResult(TypeConverterResult.FromSuccess(CatalinaColours.FromName(input)));
                 }
                 
             }

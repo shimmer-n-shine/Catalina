@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Catalina.Discord
 {
-    public static class DiscordColor
+    public static class CatalinaColours
     {
         #region Darks and Lights
         /// <summary>
@@ -126,7 +126,7 @@ namespace Catalina.Discord
 
         public static Color FromName(string input)
         {
-            var fields = typeof(DiscordColor).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var fields = typeof(CatalinaColours).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             foreach (var prop in fields)
             {
                 if (input.ToLower().Equals(prop.Name.ToLower()))
