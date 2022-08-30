@@ -1,11 +1,12 @@
-﻿namespace Catalina.Database.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Catalina.Database.Models
 {
     public class Reaction
     {
-        public ulong ID { get; set; }
-        public ulong GuildID { get; set; }
+        [Key] public ulong ID { get; set; }
         public ulong MessageID { get; set; }
-        public ulong RoleID { get; set; }
+        public Role Role { get; set; }
         public ulong ChannelID { get; set; }
         public Emoji Emoji { get; set; }
     }
