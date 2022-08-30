@@ -13,7 +13,7 @@ namespace Catalina.Discord
         {
             public string Body;
             public string Title = "Info";
-            public Color Color = DiscordColor.Blue;
+            public Color Color = CatalinaColours.Blue;
             public IUser User;
 
             public static implicit operator EmbedBuilder(InformationMessage message) => new EmbedBuilder
@@ -35,7 +35,7 @@ namespace Catalina.Discord
         {
             public string Body;
             public string Title = "Success!";
-            public Color Color = DiscordColor.Green;
+            public Color Color = CatalinaColours.Green;
             public IUser User;
 
             public static implicit operator EmbedBuilder(AcknowledgementMessage message) => new EmbedBuilder
@@ -62,7 +62,7 @@ namespace Catalina.Discord
             public static implicit operator EmbedBuilder(WarningMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
-                Color = DiscordColor.Yellow,
+                Color = CatalinaColours.Yellow,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
@@ -83,7 +83,7 @@ namespace Catalina.Discord
             public static implicit operator EmbedBuilder(ErrorMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
-                Color = DiscordColor.Red,
+                Color = CatalinaColours.Red,
                 Description = message.Exception is not null ? message.Exception.ToString() : message.Body,
                 Footer = new EmbedFooterBuilder
                 {
@@ -104,7 +104,7 @@ namespace Catalina.Discord
             public static implicit operator EmbedBuilder(QueryMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
-                Color = DiscordColor.Lilac,
+                Color = CatalinaColours.Lilac,
                 Description = message.Body,
                 Footer = new EmbedFooterBuilder
                 {
