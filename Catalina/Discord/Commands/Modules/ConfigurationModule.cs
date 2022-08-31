@@ -4,6 +4,7 @@ using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,70 +15,59 @@ namespace Catalina.Discord.Commands.Modules
     [Group("config", "Guild configurations")]
     public class ConfigurationModule : InteractionModuleBase
     {
-        [Group("starboard", "Guild starboard configuration")]
+        [Group("starboard", "Starboard configuration")]
         public class StarboardConfiguration : InteractionModuleBase
         {
-            [SlashCommand("channel", "Set starboard channel for guild")]
-            public async Task SetStarboardChannel([ChannelTypes(ChannelType.Text)] IChannel? channel = null)
+            [SlashCommand("channel", "Set starboard channel")]
+            public async Task SetStarboardChannel(
+                [Summary("Channel")] [ChannelTypes(ChannelType.Text)] IChannel channel = null)
             {
-
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 guildProperties.StarboardChannelID = channel?.Id;
 
                 await database.SaveChangesAsync();
-                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+                await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
             }
-            [SlashCommand("emoji", "Set starboard emoji for guild")]
-            public async Task SetStarboardEmoji(string emoji)
+            [SlashCommand("emoji", "Set starboard emoji")]
+            public async Task SetStarboardEmoji(
+                [Summary("Emoji")] string emoji)
             {
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
                 IEmote emote;
-                
-
+                Database.Models.Emoji catalinaEmoji;
                 try
                 {
-                   emote = Emoji.Parse(emoji);
+                    catalinaEmoji = await Database.Models.Emoji.ParseAsync(emoji, Context.Guild);
+                    emote = await Database.Models.Emoji.ToEmoteAsync(catalinaEmoji, Context.Guild);
                 }
-                catch
+                catch (Exception exception)
                 {
-                    try
-                    {
-                        emote = Emote.Parse(emoji);
-                        try
-                        {
-                            await Context.Guild.GetEmoteAsync((emote as Emote).Id);
-                        }
-                        catch
-                        {
-                            throw new System.ArgumentException("emote is not from this guild");
-                        }
-                    }
-                    catch
-                    {
-                        throw new System.ArgumentException("did not pass a valid emoji");
-                    }
+                    await RespondAsync(embed: new Utils.ErrorMessage(user:Context.User) { Exception = exception });
+                    return;
                 }
-                if (database.Emojis.Any(e => e.NameOrID == Database.Models.Emoji.Parse(emote, Context.Guild).NameOrID)) {
-                    guildProperties.StarboardEmoji = database.Emojis.First(e => e.NameOrID == Database.Models.Emoji.Parse(emote, Context.Guild).NameOrID);
+
+                if (database.Emojis.Any(e => e.NameOrID == catalinaEmoji.NameOrID)) {
+                    guildProperties.StarboardEmoji = database.Emojis.First(e => e.NameOrID == catalinaEmoji.NameOrID);
                 }
                 else
                 {
-                    guildProperties.StarboardEmoji = Database.Models.Emoji.Parse(emote, Context.Guild);
+                    guildProperties.StarboardEmoji = catalinaEmoji;
                 }
 
                 await database.SaveChangesAsync();
                 
-                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+                await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User));
             }
-            [SlashCommand("threshhold", "Set starboard threshhold for guild")]
-            public async Task SetStarboardThreshhold(int threshhold)
+            [SlashCommand("threshhold", "Set starboard threshhold")]
+            public async Task SetStarboardThreshhold(
+                [Summary("Threshhold")]int threshhold)
             {
                 if (threshhold <= 0)
                 {
-                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { Exception = new System.ArgumentException("Threshhold cannot be less than 1.")});
+                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new System.ArgumentException("Threshhold cannot be less than 1.")});
                     return;
                 }
                 using var database = new DatabaseContextFactory().CreateDbContext();
@@ -86,7 +76,7 @@ namespace Catalina.Discord.Commands.Modules
                 guildProperties.StarboardThreshhold = threshhold;
 
                 await database.SaveChangesAsync();
-                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+                await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User));
             }
         }
 
@@ -96,8 +86,10 @@ namespace Catalina.Discord.Commands.Modules
 
         public class RoleConfiguration : InteractionModuleBase
         {
-            [SlashCommand("modify", "Modify guild role configuration")]
-            public async Task ConfigureRole(IRole role, [ComplexParameter] RoleProperties roleConfig)
+            [SlashCommand("modify", "Modify role configuration")]
+            public async Task ConfigureRole(
+                [Summary("Role")] IRole role,
+                [ComplexParameter] RoleProperties roleConfig)
             {
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
@@ -117,7 +109,7 @@ namespace Catalina.Discord.Commands.Modules
 
 
                 await database.SaveChangesAsync();
-                await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User });
+                await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User));
 
             }
 
@@ -127,7 +119,7 @@ namespace Catalina.Discord.Commands.Modules
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
 
-                EmbedBuilder embed = new Utils.InformationMessage { Title = $"Configured roles for {Context.Guild.Name}: ", User = Context.User };
+                EmbedBuilder embed = new Utils.InformationMessage (user: Context.User) { Title = $"Configured roles for {Context.Guild.Name}: " };
 
                 foreach (var r in guildProperties.Roles.Where(r => r.IsColourable || r.IsRenamabale || r.IsAutomaticallyAdded))
                 {
@@ -146,23 +138,24 @@ namespace Catalina.Discord.Commands.Modules
 
                 await RespondAsync(embed: embed.Build());
             }
-            [SlashCommand("remove", "Remove guild role configurations")]
-            public async Task RemoveRole([Autocomplete(typeof(RoleRemoval))] string roleID)
+            [SlashCommand("remove", "Remove role configuration")]
+            public async Task RemoveRole(
+                [Summary("Role")] [Autocomplete(typeof(RoleRemoval))] string roleID)
             {
                 using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 EmbedBuilder embed;
-                var roleToRemove = guildProperties.Roles.Find(r => r.ID == ulong.Parse(roleID));
+                var roleToRemove = guildProperties.Roles.ToList().Find(r => r.ID == ulong.Parse(roleID));
                 if (roleToRemove != null)
                 {
                     guildProperties.Roles.Remove(roleToRemove);
                     database.Remove(roleToRemove);
-                    embed = new Utils.AcknowledgementMessage { Title = "Successfully removed role from configuration.", User = Context.User };
+                    embed = new Utils.AcknowledgementMessage (user: Context.User) { Title = "Successfully removed role from configuration."};
                 }
                 else
                 {
-                    embed = new Utils.ErrorMessage { Title = "Could not remove role from configuration.", User = Context.User };
+                    embed = new Utils.ErrorMessage (user: Context.User) { Title = "Could not remove role from configuration."};
                 }
 
                 await database.SaveChangesAsync();
