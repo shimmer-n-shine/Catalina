@@ -9,13 +9,13 @@ public class Emoji
     public EmojiType Type { get; set; }
     public enum EmojiType : byte { Internal, External };
 
-    public static Emoji Parse(DiscordNET.IEmote emote, DiscordNET.IGuild guild)
+    public static async Task<Emoji> ParseAsync(DiscordNET.IEmote emote, DiscordNET.IGuild guild)
     {
         if (emote is DiscordNET.Emote externalEmote)
         {
             try
             {
-                guild.GetEmoteAsync(externalEmote.Id);
+                await guild.GetEmoteAsync(externalEmote.Id);
                 return new Emoji { Type = EmojiType.External, NameOrID = externalEmote.Id.ToString() };
             }
             catch
@@ -31,6 +31,34 @@ public class Emoji
         else
         {
             throw new System.ArgumentException("Invalid emote provided.");
+        }
+    }
+    public static async Task<Emoji> ParseAsync(string emoji, DiscordNET.IGuild guild)
+    {
+        using var database = new DatabaseContextFactory().CreateDbContext();
+
+        try
+        {
+            return await ParseAsync(DiscordNET.Emoji.Parse(emoji), guild);
+        }
+        catch
+        {
+            try
+            {
+                var emote = DiscordNET.Emote.Parse(emoji);
+                try
+                {
+                    return await ParseAsync(await guild.GetEmoteAsync(emote.Id), guild);
+                }
+                catch
+                {
+                    throw new System.ArgumentException("emote is not from this guild");
+                }
+            }
+            catch
+            {
+                throw new System.ArgumentException("did not pass a valid emoji");
+            }
         }
     }
     public static async Task<DiscordNET.IEmote> ToEmoteAsync(Emoji emoji, DiscordNET.IGuild guild)
