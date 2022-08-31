@@ -2,7 +2,6 @@
 using Discord.Commands;
 using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Catalina.Discord
@@ -11,10 +10,22 @@ namespace Catalina.Discord
     {
         public class InformationMessage 
         {
-            public string Body;
-            public string Title = "Info";
+            public string Body = null;
+            public string Title = "Heads Up!";
             public Color Color = CatalinaColours.Blue;
-            public IUser User;
+            public readonly IUser User;
+
+            public InformationMessage(IUser user, string title = "Heads Up!", string body = null, Color? color = null)
+            {
+                this.Title = title;
+                this.Body = body;
+                this.Color = color??CatalinaColours.Blue;
+                this.User = user;
+            }
+            public InformationMessage(IUser user)
+            {
+                this.User = user;
+            }
 
             public static implicit operator EmbedBuilder(InformationMessage message) => new EmbedBuilder
             {
@@ -33,10 +44,22 @@ namespace Catalina.Discord
 
         public class AcknowledgementMessage
         {
-            public string Body;
+            public string Body = null;
             public string Title = "Success!";
             public Color Color = CatalinaColours.Green;
-            public IUser User;
+            public readonly IUser User;
+
+            public AcknowledgementMessage(IUser user, string title = "Success!", string body = null, Color? color = null)
+            {
+                this.Title = title;
+                this.Body = body;
+                this.Color = color ?? CatalinaColours.Blue;
+                this.User = user;
+            }
+            public AcknowledgementMessage(IUser user)
+            {
+                this.User = user;
+            }
 
             public static implicit operator EmbedBuilder(AcknowledgementMessage message) => new EmbedBuilder
             {
@@ -56,8 +79,20 @@ namespace Catalina.Discord
         public class WarningMessage
         {
             public string Body;
-            public string Title = "Warning:";
-            public IUser User;
+            public string Title = "Warning";
+            public readonly IUser User;
+
+            public WarningMessage(IUser user, string title = "Warning!", string body = null)
+            {
+                this.Title = title;
+                this.Body = body;
+                this.User = user;
+            }
+
+            public WarningMessage(IUser user)
+            {
+                this.User = user;
+            }
 
             public static implicit operator EmbedBuilder(WarningMessage message) => new EmbedBuilder
             {
@@ -76,15 +111,28 @@ namespace Catalina.Discord
         public class ErrorMessage
         {
             public string Body;
-            public string Title = "Uh oh.";
-            public IUser User;
-            public Exception Exception = null;
+            public string Title;
+            public readonly IUser User;
+            public Exception Exception = new Exception("Something went wrong.");
+
+            public ErrorMessage(IUser user, string title = "Uh Oh!", string body = null, Exception exception = null)
+            {
+                this.Title = title;
+                this.Body = body;
+                this.User = user;
+                this.Exception = exception??new Exception("Something went wrong.");
+            }
+
+            public ErrorMessage(IUser user)
+            {
+                this.User = user;
+            }
 
             public static implicit operator EmbedBuilder(ErrorMessage message) => new EmbedBuilder
             {
                 Title = message.Title,
                 Color = CatalinaColours.Red,
-                Description = message.Exception is not null ? message.Exception.ToString() : message.Body,
+                Description = message.Exception is not null ? $"{message.Exception.GetType().Name}: {message.Exception.Message}" : "$Unknown exception",
                 Footer = new EmbedFooterBuilder
                 {
                     IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
@@ -97,9 +145,9 @@ namespace Catalina.Discord
 
         public class QueryMessage
         {
-            public string Body;
-            public string Title = "Wait.";
-            public IUser User;
+            public readonly string Body;
+            public readonly string Title = "Wait.";
+            public readonly IUser User;
 
             public static implicit operator EmbedBuilder(QueryMessage message) => new EmbedBuilder
             {
@@ -118,7 +166,7 @@ namespace Catalina.Discord
 
         public static async Task<IMessage> QueryUser(ICommandContext ctx)
         {
-            var message = await Discord.interactiveService.NextMessageAsync();
+            var message = await Discord.InteractiveService.NextMessageAsync();
 
             if (message.IsSuccess)
             {
@@ -126,58 +174,17 @@ namespace Catalina.Discord
             }
             else if (message.IsTimeout)
             {
-                var embed = new ErrorMessage
+                var embed = new ErrorMessage(user: ctx.User)
                 {
-                    Body = "You took too long to respond.",
-                    User = ctx.User
+                    Body = "You took too long to respond."
                 };
                 await ctx.Message.ReplyAsync(embed: embed);
             }
             return null;
         }
 
-        public static IEmote GetEmojiFromString(string text)
-        {
-            var pattern = new Regex("([A-z_]|[0-9]){2,}");
-            try
-            {
-                var result = pattern.Match(text);
-                if (result.Success)
-                {
-                    var match = ':' + result.Value + ':';
-                    var emoji = Emote.Parse(match);
-                    return emoji;
 
-                }
-                else
-                {
-                    try
-                    {
-                        var emoji = Emote.Parse(text);
-                        return emoji;
-                    }
-                    catch
-                    {
-                        try
-                        {
-                            var emoji = Emoji.Parse(text);
-                            return emoji;
-                        }
-                        catch
-                        {
-                            return null;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-
-                return null;
-            }
-        }
-
-        public static async Task<IMessage> GetMessageFromLink(ICommandContext ctx, string link)
+        public static async Task<IMessage> GetMessageFromLink(IInteractionContext ctx, string link)
         {
             var messageID = GetMessageIDFromLink(link);
             var channelID = GetChannelIDFromLink(link);
@@ -212,6 +219,20 @@ namespace Catalina.Discord
                 return Convert.ToUInt64(splitMessage[^2]);
             }
             catch { return null; }
+        }
+
+        public static async Task<bool> VerifyRoleForUser(IInteractionContext context, ulong roleID)
+        {
+            var role = context.Guild.GetRole(roleID);
+
+            var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
+            if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
+            var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
+            var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+            var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
+            var results = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+
+            return results.Contains(role);
         }
 
     }
