@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Catalina.Database;
-using Microsoft.EntityFrameworkCore;
 using Discord;
 using Fergun.Interactive;
 using Discord.WebSocket;
-using Discord.Commands;
 using System.Reflection;
 using NLog;
-using System.Threading;
 using Discord.Interactions;
 using RunMode = Discord.Interactions.RunMode;
 using Catalina.Discord.Commands.TypeConverters;
@@ -19,53 +13,58 @@ namespace Catalina.Discord
 {
     public class Discord
     {
-        public static DiscordSocketClient discord;
-        public static InteractiveService interactiveService;
-        public static InteractionService interactionService;
-        public static async Task SetupClient()
+        public static readonly DiscordSocketClient DiscordClient;
+        public static readonly InteractiveService InteractiveService;
+        public static readonly InteractionService InteractionService;
+        static Discord()
         {
-            var logger = LogManager.GetCurrentClassLogger();
-
-            discord = new DiscordSocketClient(new DiscordSocketConfig()
+            DiscordClient = new DiscordSocketClient(new DiscordSocketConfig()
             {
                 LogLevel = LogSeverity.Verbose,
                 GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.All, //remove all later
                 AlwaysDownloadUsers = true,
             });
 
-            interactionService = new InteractionService(discord, new InteractionServiceConfig
+            InteractionService = new InteractionService(DiscordClient, new InteractionServiceConfig
             {
                 DefaultRunMode = RunMode.Async,
                 LogLevel = LogSeverity.Verbose
             });
 
-            interactiveService = new InteractiveService(discord as BaseSocketClient, new InteractiveConfig
+            InteractiveService = new InteractiveService(DiscordClient as BaseSocketClient, new InteractiveConfig
             {
                 DefaultTimeout = TimeSpan.FromSeconds(30),
                 LogLevel = LogSeverity.Verbose
             });
+        }
+        public static async Task SetupClient()
+        {
+            var logger = LogManager.GetCurrentClassLogger();
 
-            interactionService.AddTypeConverter<Color>(new ColorTypeConverter());
-
-            await interactionService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
             
 
-            discord.UserJoined += Events.GuildMemberAdded;
-            discord.MessageDeleted += Events.MessageDeleted;
-            discord.MessageReceived += Events.MessageCreated;
-            discord.InteractionCreated += Events.InteractionCreated;
-            discord.ReactionAdded += Events.ReactionAdded;
-            discord.ReactionRemoved += Events.ReactionRemoved;
-            discord.ReactionsCleared += Events.ReactionsCleared;
-            discord.JoinedGuild += Events.JoinedGuild;
-            discord.LeftGuild += Events.LeftGuild;
-            discord.Ready += Events.Ready;
+            InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
-            discord.Log += Events.Discord_Log;
+            await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
+            
 
-            await discord.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
+            DiscordClient.UserJoined += Events.GuildMemberAdded;
+            DiscordClient.MessageDeleted += Events.MessageDeleted;
+            DiscordClient.MessageReceived += Events.MessageCreated;
+            DiscordClient.InteractionCreated += Events.InteractionCreated;
+            DiscordClient.ReactionAdded += Events.ReactionAdded;
+            DiscordClient.ReactionRemoved += Events.ReactionRemoved;
+            DiscordClient.ReactionsCleared += Events.ReactionsCleared;
+            DiscordClient.JoinedGuild += Events.JoinedGuild;
+            DiscordClient.LeftGuild += Events.LeftGuild;
+            DiscordClient.Ready += Events.Ready;
 
-            await discord.StartAsync();
+
+            DiscordClient.Log += Events.Discord_Log;
+
+            await DiscordClient.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
+
+            await DiscordClient.StartAsync();
         }
     }
 }
