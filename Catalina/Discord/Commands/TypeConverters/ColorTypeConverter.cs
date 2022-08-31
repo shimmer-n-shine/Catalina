@@ -27,21 +27,12 @@ namespace Catalina.Discord.Commands.TypeConverters
 
             try
             {
-                if (CatalinaColours.FromName(input).Equals(Color.Default))
-                {
-                    var c = System.Drawing.ColorTranslator.FromHtml(input);
-
-                    return Task.FromResult(TypeConverterResult.FromSuccess(new Color(c.R, c.G, c.B)));
-                }
-                else
-                {
-                    return Task.FromResult(TypeConverterResult.FromSuccess(CatalinaColours.FromName(input)));
-                }
+                return Task.FromResult(TypeConverterResult.FromSuccess(CatalinaColours.FromName(input)));
                 
             }
             catch 
             {
-                context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = context.User, Exception = new ArgumentException() }, ephemeral: true);
+                context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: context.User) { Exception = new ArgumentException() }, ephemeral: true);
                 return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
             }
         }
