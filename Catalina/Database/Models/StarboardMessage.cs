@@ -12,5 +12,5 @@ public class StarboardMessage
 
     public ulong? StarboardMessageID { get; set; }
 
-    public List<StarboardVote> UserVotes { get; set; } = new List<StarboardVote>();
+    public virtual ICollection<StarboardVote> UserVotes { get; set; }
 }
