@@ -9,15 +9,13 @@ public class GuildProperty
 
     public ulong? StarboardChannelID { get; set; } = null;
 
-    public virtual Emoji? StarboardEmoji { get; set; }
+    public virtual Emoji StarboardEmoji { get; set; }
 
     public int StarboardThreshhold { get; set; } = 5;
 
-    public List<StarboardMessage> StarboardMessages { get; set; } = new List<StarboardMessage>();
+    public virtual ICollection<StarboardMessage> StarboardMessages { get; set; }
 
-    public List<Response> Responses { get; set; } = new List<Response>();
+    public virtual ICollection<Response> Responses { get; set; }
 
-    public List<Role> Roles { get; set; } = new List<Role>();
-
-    public List<Reaction> Reactions { get; set; }  = new List<Reaction>();
+    public virtual ICollection<Role> Roles { get; set; }
 }
