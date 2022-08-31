@@ -1,4 +1,6 @@
 ﻿using Discord;
+using Humanizer;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -122,6 +124,8 @@ namespace Catalina.Discord
         /// A lotus-lilac, or #C8A2C8.
         /// </summary>
         public static Color Lilac { get; } = new Color(0xC8A2C8);
+
+        private static Dictionary<string, Color> _dictionaryColours;
         #endregion
 
         public static Color FromName(string input)
@@ -134,8 +138,21 @@ namespace Catalina.Discord
                     return (Color) prop.GetValue(null);
                 }
             }
-            return Color.Default;
+            throw new System.ArgumentException("could not get colour from name");
         }
+        public static Dictionary<string,Color> ToDictionary()
+        {
+            if (_dictionaryColours is null)
+            {
+                _dictionaryColours = new Dictionary<string, Color>();
+                var fields = typeof(CatalinaColours).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                foreach (var prop in fields)
+                {
+                    _dictionaryColours.Add(prop.Name.Humanize(LetterCasing.Title), (Color)prop.GetValue(null));
+                }
+            }
 
+            return _dictionaryColours;
+        } 
     }
 }
