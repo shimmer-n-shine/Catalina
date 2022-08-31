@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Proxies;
 using System;
 
 namespace Catalina.Database
@@ -12,10 +13,12 @@ namespace Catalina.Database
             var ConnStr = Environment.GetEnvironmentVariable(AppProperties.ConnectionString);
             var serverVersion = ServerVersion.AutoDetect(ConnStr);
             var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
-            optionsBuilder.UseMySql(ConnStr,serverVersion, x =>
-            {
-                x.EnableRetryOnFailure();
-            });
+            optionsBuilder
+                .UseMySql(ConnStr, serverVersion, x =>
+                {
+                    x.EnableRetryOnFailure();
+                })
+                .UseLazyLoadingProxies(true);
             return new DatabaseContext(optionsBuilder.Options);
         }
     }
