@@ -16,11 +16,13 @@ namespace Catalina.Discord.Commands.Modules
     public class StylisationModule : InteractionModuleBase
     {
         [SlashCommand("colour", "Change role colour")]
-        public async Task ConfigureRole([Autocomplete(typeof(RoleStylisation))] string roleID, Color roleColor)
+        public async Task ConfigureRole(
+            [Summary("Role")] [Autocomplete(typeof(ColourableRoles))] string roleID, 
+            [Summary("Colour")] Color roleColor)
         {
             if (!ulong.TryParse(roleID, out ulong id))
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new ArgumentException() }, ephemeral: true);
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
                 return;
             }
 
@@ -49,28 +51,29 @@ namespace Catalina.Discord.Commands.Modules
 
                 if (results.Contains(id)) {
                     await role.ModifyAsync(r => r.Color = roleColor);
-                    await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User, Body = $"Changed role colour to {System.Drawing.ColorTranslator.ToHtml(roleColor)}.", Color = roleColor });
+                    await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User) { Body = $"Changed role colour to {System.Drawing.ColorTranslator.ToHtml(roleColor)}.", Color = roleColor });
                 }
                 else
                 {
-                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new UnauthorizedAccessException() }, ephemeral: true);
+                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User){ Exception = new UnauthorizedAccessException() }, ephemeral: true);
                 }
-                
             }
             catch
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new ArgumentException() }, ephemeral: true);
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User){ Exception = new ArgumentException() }, ephemeral: true);
                 return;
 
             }
         }
 
         [SlashCommand("name", "Change role name")]
-        public async Task ConfigureRole([Autocomplete(typeof(RoleStylisation))] string roleID, string roleName)
+        public async Task ConfigureRole(
+            [Summary("Role")] [Autocomplete(typeof(ColourableRoles))] string roleID,
+            [Summary("Name")] string roleName)
         {
             if (!ulong.TryParse(roleID, out ulong id))
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new ArgumentException() }, ephemeral: true);
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
                 return;
             }
 
@@ -100,21 +103,18 @@ namespace Catalina.Discord.Commands.Modules
                 if (results.Contains(id))
                 {
                     await role.ModifyAsync(r => r.Name = roleName);
-                    await RespondAsync(embed: new Utils.AcknowledgementMessage { User = Context.User, Body = $"Changed role name to {roleName}.", Color = CatalinaColours.Green });
+                    await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User) { Body = $"Changed role name to {roleName}.", Color = CatalinaColours.Green });
                 }
                 else
                 {
-                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new UnauthorizedAccessException() }, ephemeral: true);
-
+                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new UnauthorizedAccessException() }, ephemeral: true);
                 }
-
 
             }
             catch
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = Context.User, Exception = new ArgumentException() }, ephemeral: true);
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
                 return;
-
             }
         }
 
