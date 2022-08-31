@@ -3,7 +3,6 @@ using Discord;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
@@ -14,51 +13,58 @@ public class Starboard
     public static async Task ProcessVote(GuildProperty guildProperty, IMessage dMessage, IUser user)
     {
         using var database = new DatabaseContextFactory().CreateDbContext();
+        //modify incoming guildProperty to include starboard messages, better to do it here than upstream :)
         guildProperty = database.GuildProperties.Include(g => g.StarboardMessages).ThenInclude(g => g.UserVotes).First(g => g == guildProperty);
+        
+        //microoptimisation; won't need to evaluate and find these twice this way
+        var knownMessage = guildProperty.StarboardMessages.FirstOrDefault(m => m.ChannelID == dMessage.Channel.Id && m.MessageID == dMessage.Id);
+        var starboardMessage = guildProperty.StarboardMessages.FirstOrDefault(m => guildProperty.StarboardChannelID == dMessage.Channel.Id && m.StarboardMessageID == dMessage.Id);
 
         //if reacting to a known starboard candidate
-        if (guildProperty.StarboardMessages.Any(m => m.ChannelID == dMessage.Channel.Id && m.MessageID == dMessage.Id))
+        if (knownMessage is not null)
         {
-            var message = guildProperty.StarboardMessages.First(m => m.ChannelID == dMessage.Channel.Id && m.MessageID == dMessage.Id);
-            if (!message.UserVotes.Any(v => v.UserId == user.Id))
+            //if user hasn't voted already
+            if (!knownMessage.UserVotes.Any(v => v.UserId == user.Id))
             {
-                message.UserVotes.Add(new StarboardVote { UserId = user.Id });
+                knownMessage.UserVotes.Add(new StarboardVote { UserId = user.Id });
                 await database.SaveChangesAsync();
-                if (message.UserVotes.Count >= guildProperty.StarboardThreshhold)
+                if (knownMessage.UserVotes.Count >= guildProperty.StarboardThreshhold)
                 {
-                    if (message.StarboardMessageID is null)
+                    //if no starboard message has been posted yet
+                    if (knownMessage.StarboardMessageID is null)
                     {
-                        message.StarboardMessageID = (await PostStarboardMessage(guildProperty, dMessage, (uint)message.UserVotes.Count)).Id;
+                        knownMessage.StarboardMessageID = (await PostStarboardMessage(guildProperty, dMessage, (uint)knownMessage.UserVotes.Count)).Id;
                         await database.SaveChangesAsync();
                     }
                     else
                     {
-                        await UpdateStarboardMessage(guildProperty, message, (uint)message.UserVotes.Count);
+                        await UpdateStarboardMessage(guildProperty, knownMessage, (uint)knownMessage.UserVotes.Count);
                     }
                 }
             }
         }
         //if reacting to a message in the starboard channel
-        else if (guildProperty.StarboardMessages.Any(m => guildProperty.StarboardChannelID == dMessage.Channel.Id && m.StarboardMessageID == dMessage.Id))
+        else if (starboardMessage is not null)
         {
-            var message = guildProperty.StarboardMessages.First(m => guildProperty.StarboardChannelID == dMessage.Channel.Id && m.StarboardMessageID == dMessage.Id);
-            if (!message.UserVotes.Any(v => v.UserId == user.Id))
+            //if user hasn't voted already
+            if (!starboardMessage.UserVotes.Any(v => v.UserId == user.Id))
             {
-                message.UserVotes.Add(new StarboardVote { UserId = user.Id });
+                starboardMessage.UserVotes.Add(new StarboardVote { UserId = user.Id });
                 await database.SaveChangesAsync();
-                if (message.UserVotes.Count >= guildProperty.StarboardThreshhold)
+                if (starboardMessage.UserVotes.Count >= guildProperty.StarboardThreshhold)
                 {
-                    await UpdateStarboardMessage(guildProperty, message, (uint)message.UserVotes.Count);
+                    await UpdateStarboardMessage(guildProperty, starboardMessage, (uint)starboardMessage.UserVotes.Count);
                 }
             }
         }
-        //if not reacting to a known starboard candidate
+        //if reacting to a new starboard candidate
         else
         {
             var message = new Database.Models.StarboardMessage { ChannelID = dMessage.Channel.Id, MessageID = dMessage.Id, UserVotes = new List<StarboardVote>() { new StarboardVote { UserId = user.Id } } };
             guildProperty.StarboardMessages.Add(message);
             if (message.UserVotes.Count >= guildProperty.StarboardThreshhold)
             {
+                //if no starboard message has been posted yet
                 if (message.StarboardMessageID is null)
                 {
                     message.StarboardMessageID = (await PostStarboardMessage(guildProperty, dMessage, (uint)message.UserVotes.Count)).Id;
@@ -69,7 +75,7 @@ public class Starboard
                     await UpdateStarboardMessage(guildProperty, message, (uint)message.UserVotes.Count);
                 }
             }
-            database.SaveChanges();
+            await database.SaveChangesAsync();
         }
     }
 
@@ -88,8 +94,12 @@ public class Starboard
         {
             throw new ArgumentException($"could not get channel for {guild.Name} ({guild.Id})");
         }
+        //no channel found, terminate
         if (sbChannel is null) return null;
-        var finalMessage = await (sbChannel as IMessageChannel).SendMessageAsync(embed: new StarboardMessage { Message = message, User = message.Author, Votes = votes, GuildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty) });
+
+        var finalMessage = await (sbChannel as IMessageChannel).SendMessageAsync(embed: new StarboardMessage { 
+            Message = message, User = message.Author, Votes = votes, GuildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty) 
+        });
         await finalMessage.AddReactionAsync(await Database.Models.Emoji.ToEmoteAsync(guildProperty.StarboardEmoji, guild));
         return finalMessage;
     }
@@ -104,8 +114,8 @@ public class Starboard
 
         try
         {
-            sbChannel = Discord.discord.GetGuild(guildProperty.ID).GetChannel(guildProperty.StarboardChannelID.Value);
-            ogChannel = Discord.discord.GetGuild(guildProperty.ID).GetChannel(message.ChannelID);
+            sbChannel = Discord.DiscordClient.GetGuild(guildProperty.ID).GetChannel(guildProperty.StarboardChannelID.Value);
+            ogChannel = Discord.DiscordClient.GetGuild(guildProperty.ID).GetChannel(message.ChannelID);
             ogMessage = await (ogChannel as ITextChannel).GetMessageAsync(message.MessageID);
         }
         catch
@@ -115,7 +125,7 @@ public class Starboard
         if (sbChannel is null || ogChannel is null) return null;
 
         var sbMessageEmbed = (await (sbChannel as ITextChannel).GetMessageAsync(message.StarboardMessageID.Value)).Embeds.First().ToEmbedBuilder().WithTitle(
-            $"{votes} {Database.Models.Emoji.ToEmoteAsync(guildProperty.StarboardEmoji, ogChannel.Guild).Result} | <t:{ogMessage.Timestamp.ToUnixTimeSeconds()}>")
+            $"{votes} {await Database.Models.Emoji.ToEmoteAsync(guildProperty.StarboardEmoji, ogChannel.Guild)} | <t:{ogMessage.Timestamp.ToUnixTimeSeconds()}>")
             .Build();
         return await (sbChannel as ITextChannel).ModifyMessageAsync(message.StarboardMessageID.Value, msg => msg.Embeds = new[] { sbMessageEmbed });
     }
@@ -138,7 +148,7 @@ public class Starboard
                 new EmbedFieldBuilder { IsInline = false, Name = "Original Message", Value = $"[Jump to Message]({(message.Message as IMessage).GetJumpUrl()})" }
             },
             Color = CatalinaColours.Gold,
-            Title = $"{message.Votes} {(Database.Models.Emoji.ToEmoteAsync(message.GuildProperty.StarboardEmoji, (message.Message.Channel as IGuildChannel).Guild)).Result} | <t:{message.Message.Timestamp.ToUnixTimeSeconds()}>",
+            Title = $"{message.Votes} {Database.Models.Emoji.ToEmoteAsync(message.GuildProperty.StarboardEmoji, (message.Message.Channel as IGuildChannel).Guild).Result} | <t:{message.Message.Timestamp.ToUnixTimeSeconds()}>",
             Footer = new EmbedFooterBuilder
             {
                 IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
