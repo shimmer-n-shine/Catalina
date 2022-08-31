@@ -12,6 +12,8 @@ namespace Catalina.Discord
 {
     class Events
     {
+        
+
         internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
             if (reaction.User.Value.IsBot || reaction.User.Value.Discriminator == "0000") return;
@@ -32,7 +34,7 @@ namespace Catalina.Discord
                 }
                 
 
-                var emoji = Database.Models.Emoji.Parse(reaction.Emote, guild);
+                var emoji = await Database.Models.Emoji.ParseAsync(reaction.Emote, guild);
 
                 if (emoji.NameOrID == guildProperty.StarboardEmoji.NameOrID)
                 {
@@ -45,52 +47,64 @@ namespace Catalina.Discord
 
         internal static async Task ReactionRemoved(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static async Task MessageCreated(SocketMessage arg)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
 
         }
 
         internal static async Task ReactionsCleared(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static async Task GuildMemberAdded(SocketGuildUser user)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
+
+            var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
+            if (guildProperty is null) return;
+
+            try
+            {
+                await user.AddRolesAsync(guildProperty.Roles.Where(r => r.IsAutomaticallyAdded).Select(r => r.ID));
+            }
+            catch
+            {
+                NLog.LogManager.GetCurrentClassLogger().Error("Could not add automatic roles to user");
+            }
+            
+
         }
 
         internal static async Task MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static async Task InteractionCreated(SocketInteraction socketInteraction)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
-
-            var context = new SocketInteractionContext(Discord.discord, socketInteraction);
+            var context = new SocketInteractionContext(Discord.DiscordClient, socketInteraction);
             await TickGuild(context);
-            await Discord.interactionService.ExecuteCommandAsync(context, null);
+            await Discord.InteractionService.ExecuteCommandAsync(context, null);
         }
 
         internal static async Task GuildPingAsync(ulong guildID)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static async Task LeftGuild(SocketGuild arg)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static async Task JoinedGuild(SocketGuild arg)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
         internal static Task Discord_Log(LogMessage msg)
@@ -146,10 +160,10 @@ namespace Catalina.Discord
             {
                 if (ulong.TryParse(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID), out ulong guildID)) 
                 {
-                    await Discord.interactionService.RegisterCommandsToGuildAsync(guildID);
+                    await Discord.InteractionService.RegisterCommandsToGuildAsync(guildID);
                 }
             }
-            await Discord.discord.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
+            await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
             NLog.LogManager.GetCurrentClassLogger().Info("Discord Ready!");
         }
 
