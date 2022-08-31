@@ -19,12 +19,12 @@ namespace Catalina.Discord.Commands.Preconditions
             if (access >= _requiredLevel) return Task.FromResult(PreconditionResult.FromSuccess());
             else
             {
-                context.Interaction.RespondAsync(embed: new Utils.ErrorMessage { User = context.User , Exception = new UnauthorizedAccessException()}, ephemeral: true);
+                context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: context.User) { Exception = new UnauthorizedAccessException()}, ephemeral: true);
                 return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
             }
         }
 
-        public AccessLevel GetPermission(IInteractionContext ctx)
+        public static AccessLevel GetPermission(IInteractionContext ctx)
         {
             if (ctx.User.IsBot)
             {
