@@ -10,8 +10,9 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
-    public class RoleRemoval : AutocompleteHandler
+    public class RoleStylisation : AutocompleteHandler
     {
+
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -19,12 +20,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             IServiceProvider services
         )
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
-
-            if (!(await new RequirePrivilege(AccessLevel.Administrator).CheckRequirementsAsync(context, null, services)).IsSuccess)
-            {
-                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Insufficient Permission");
-            }
+            await using var database = new DatabaseContextFactory().CreateDbContext();
 
             try
             {
@@ -32,14 +28,14 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var results = new List<AutocompleteResult>();
 
-                foreach (var r in database.GuildProperties.Include(g => g.Roles).SelectMany(g => g.Roles).AsNoTracking())
-                {
-                   results.Add(new AutocompleteResult
-                    {
-                        Name = context.Guild.GetRole(r.ID).Name,
-                        Value = r.ID.ToString()
-                    });
-                }
+                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
+
+                var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
+
+                results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
+                    Name = context.Guild.GetRole(r).Name,
+                    Value = r.ToString()
+                }).ToList();
 
                 if (string.IsNullOrEmpty(value))
                     return AutocompletionResult.FromSuccess(results.Take(25));

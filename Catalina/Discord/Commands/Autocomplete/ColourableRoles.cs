@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
-    public class RoleStylisation : AutocompleteHandler
+    public class ColourableRoles : AutocompleteHandler
     {
 
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
@@ -20,7 +20,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             IServiceProvider services
         )
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            await using var database = new DatabaseContextFactory().CreateDbContext();
 
             try
             {
@@ -29,6 +29,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                 var results = new List<AutocompleteResult>();
 
                 var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+               
                 var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
                 results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
@@ -37,7 +38,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                 }).ToList();
 
                 if (string.IsNullOrEmpty(value))
-                    return AutocompletionResult.FromSuccess(results.Take(5));
+                    return AutocompletionResult.FromSuccess(results.Take(25));
 
                 var names = results.Select(r => r.Name).ToList();
 
@@ -61,7 +62,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                         matches.Add(results.FirstOrDefault(z => z.Name == result.Key));
                     }
 
-                    var matchCollection = matches.Count() > 5 ? matches.Take(5) : matches;
+                    var matchCollection = matches.Count() > 25 ? matches.Take(25) : matches;
 
                     return AutocompletionResult.FromSuccess(matchCollection);
                 }
@@ -79,5 +80,10 @@ namespace Catalina.Discord.Commands.Autocomplete
         }
 
         protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+    }
+    public enum RoleTarget : byte
+    {
+        Colourable,
+        Renameable,
     }
 }

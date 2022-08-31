@@ -10,8 +10,9 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
-    public class RoleRemoval : AutocompleteHandler
+    public class ColourNames : AutocompleteHandler
     {
+
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -21,25 +22,16 @@ namespace Catalina.Discord.Commands.Autocomplete
         {
             using var database = new DatabaseContextFactory().CreateDbContext();
 
-            if (!(await new RequirePrivilege(AccessLevel.Administrator).CheckRequirementsAsync(context, null, services)).IsSuccess)
-            {
-                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Insufficient Permission");
-            }
-
             try
             {
                 var value = autocompleteInteraction.Data.Current.Value as string;
-
                 var results = new List<AutocompleteResult>();
+                var colours = CatalinaColours.ToDictionary();
 
-                foreach (var r in database.GuildProperties.Include(g => g.Roles).SelectMany(g => g.Roles).AsNoTracking())
-                {
-                   results.Add(new AutocompleteResult
-                    {
-                        Name = context.Guild.GetRole(r.ID).Name,
-                        Value = r.ID.ToString()
-                    });
-                }
+                results = colours.Select(r => new AutocompleteResult {
+                    Name = r.Key,
+                    Value = r.Key
+                }).ToList();
 
                 if (string.IsNullOrEmpty(value))
                     return AutocompletionResult.FromSuccess(results.Take(25));
@@ -66,7 +58,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                         matches.Add(results.FirstOrDefault(z => z.Name == result.Key));
                     }
 
-                    var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
+                    var matchCollection = matches.Count() > 25 ? matches.Take(25) : matches;
 
                     return AutocompletionResult.FromSuccess(matchCollection);
                 }
