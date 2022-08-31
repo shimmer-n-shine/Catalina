@@ -8,7 +8,6 @@ namespace Catalina.Database
         public DatabaseContext(DbContextOptions dbContextOptions) : base(dbContextOptions) { }
         public DbSet<GuildProperty> GuildProperties { get; set; }
         public DbSet<Response> Responses { get; set; }
-        public DbSet<Reaction> Reactions { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<StarboardMessage> StarboardMessages { get; set; }
         public DbSet<Emoji> Emojis { get; set; }
