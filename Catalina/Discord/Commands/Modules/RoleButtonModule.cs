@@ -245,7 +245,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             try
             {  
-                await (message as IUserMessage).ModifyAsync(msg => msg.Components = new Optional<MessageComponent>());
+                await (message as IUserMessage).ModifyAsync(msg => msg.Components = new ComponentBuilder().Build());
                 await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
             }
             catch (Exception e)

@@ -12,7 +12,6 @@ namespace Catalina.Discord.Commands.Autocomplete
 {
     public class ColourNames : AutocompleteHandler
     {
-
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -74,7 +73,6 @@ namespace Catalina.Discord.Commands.Autocomplete
                 return AutocompletionResult.FromError(ex);
             }
         }
-
         protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
     }
 }
