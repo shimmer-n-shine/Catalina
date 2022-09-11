@@ -27,7 +27,8 @@ namespace Catalina.Discord.Commands.Modules
             }
 
             using var database = new DatabaseContextFactory().CreateDbContext();
-            var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+            //var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = database.GuildProperties.AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
             Database.Models.Role DBrole;
             
             DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == id);
@@ -43,7 +44,8 @@ namespace Catalina.Discord.Commands.Modules
             {
                 var role = Context.Guild.GetRole(ulong.Parse(roleID));
 
-                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+                //var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+                var preliminaryGuildRoleResults = database.GuildProperties.AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
                 var preliminaryUserRoleResults = (Context.User as IGuildUser).RoleIds;
 
                 var results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults);
@@ -78,7 +80,8 @@ namespace Catalina.Discord.Commands.Modules
             }
 
             using var database = new DatabaseContextFactory().CreateDbContext();
-            var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+            //var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = database.GuildProperties.AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
             Database.Models.Role DBrole;
 
             DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == id);
@@ -94,7 +97,8 @@ namespace Catalina.Discord.Commands.Modules
             {
                 var role = Context.Guild.GetRole(ulong.Parse(roleID));
 
-                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+                //var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+                var preliminaryGuildRoleResults = database.GuildProperties.SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
                 var preliminaryUserRoleResults = (Context.User as IGuildUser).RoleIds;
 
                 var results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults);

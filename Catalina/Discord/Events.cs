@@ -26,7 +26,8 @@ namespace Catalina.Discord
                 Database.Models.GuildProperty guildProperty = null;
                 try
                 {
-                    guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g.ID == guild.Id);
+                    //guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g.ID == guild.Id);
+                    guildProperty = database.GuildProperties.First(g => g.ID == guild.Id);
                 } 
                 catch
                 {
@@ -36,7 +37,7 @@ namespace Catalina.Discord
 
                 var emoji = await Database.Models.Emoji.ParseAsync(reaction.Emote, guild);
 
-                if (emoji.NameOrID == guildProperty.StarboardEmoji.NameOrID)
+                if (emoji.NameOrID == guildProperty.Starboard.Emoji.NameOrID)
                 {
                     await Starboard.ProcessVote(guildProperty, await message.GetOrDownloadAsync(), reaction.User.Value);
                 }
@@ -65,7 +66,8 @@ namespace Catalina.Discord
         {
             await using var database = new DatabaseContextFactory().CreateDbContext();
 
-            var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
+            //var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
+            var guildProperty = database.GuildProperties.FirstOrDefault(g => g.ID == user.Guild.Id);
             if (guildProperty is null) return;
 
             try
@@ -158,10 +160,14 @@ namespace Catalina.Discord
         {
             if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID))) 
             {
+                #if DEBUG
                 if (ulong.TryParse(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID), out ulong guildID)) 
                 {
                     await Discord.InteractionService.RegisterCommandsToGuildAsync(guildID);
                 }
+                #else
+                await Discord.InteractionService.RegisterCommandsGloballyAsync();
+                #endif
             }
             await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
             NLog.LogManager.GetCurrentClassLogger().Info("Discord Ready!");
@@ -173,9 +179,15 @@ namespace Catalina.Discord
 
             if (database.GuildProperties.Find(context.Guild.Id) == null)
             {
-                database.GuildProperties.Add(new Database.Models.GuildProperty { ID = context.Guild.Id , StarboardEmoji = database.Emojis.First(e => e.NameOrID == ":star:") });
+                var guildProperty = new Database.Models.GuildProperty { ID = context.Guild.Id, Starboard = new Database.Models.Starboard { } };
+                database.GuildProperties.Add(guildProperty);
 
                 await database.SaveChangesAsync();
+
+                guildProperty.Starboard.SetOrCreateEmoji(database.Emojis.AsNoTracking().FirstOrDefault(e => e.NameOrID == ":star:"), database);
+
+                await database.SaveChangesAsync();
+                
             }
         }
     }
