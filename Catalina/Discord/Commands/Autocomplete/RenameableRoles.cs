@@ -12,7 +12,6 @@ namespace Catalina.Discord.Commands.Autocomplete
 {
     public class RoleStylisation : AutocompleteHandler
     {
-
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -28,7 +27,8 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var results = new List<AutocompleteResult>();
 
-                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
+                //var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
+                var preliminaryGuildRoleResults = database.GuildProperties.AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
 
                 var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
