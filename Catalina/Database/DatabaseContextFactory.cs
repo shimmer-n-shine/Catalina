@@ -14,11 +14,11 @@ namespace Catalina.Database
             var serverVersion = ServerVersion.AutoDetect(ConnStr);
             var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
             optionsBuilder
+                .UseLazyLoadingProxies(true)
                 .UseMySql(ConnStr, serverVersion, x =>
                 {
                     x.EnableRetryOnFailure();
-                })
-                .UseLazyLoadingProxies(true);
+                });
             return new DatabaseContext(optionsBuilder.Options);
         }
     }
