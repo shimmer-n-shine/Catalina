@@ -36,20 +36,39 @@ namespace Catalina.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("StarboardChannelID")
+                    b.Property<ulong?>("StarboardID")
                         .HasColumnType("bigint unsigned");
-
-                    b.Property<string>("StarboardEmojiNameOrID")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<int>("StarboardThreshhold")
-                        .HasColumnType("int");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("StarboardEmojiNameOrID");
+                    b.HasIndex("StarboardID");
 
                     b.ToTable("GuildProperties");
+                });
+
+            modelBuilder.Entity("Catalina.Database.Models.Message", b =>
+                {
+                    b.Property<ulong>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("ChannelID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong>("MessageID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong?>("StarboardID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong?>("StarboardMessageID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("StarboardID");
+
+                    b.ToTable("StarboardMessages");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Response", b =>
@@ -101,38 +120,35 @@ namespace Catalina.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.StarboardMessage", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
                 {
                     b.Property<ulong>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong>("ChannelID")
+                    b.Property<ulong?>("ChannelID")
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("GuildPropertyID")
-                        .HasColumnType("bigint unsigned");
+                    b.Property<string>("EmojiNameOrID")
+                        .HasColumnType("varchar(255)");
 
-                    b.Property<ulong>("MessageID")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong?>("StarboardMessageID")
-                        .HasColumnType("bigint unsigned");
+                    b.Property<int>("Threshhold")
+                        .HasColumnType("int");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("GuildPropertyID");
+                    b.HasIndex("EmojiNameOrID");
 
-                    b.ToTable("StarboardMessages");
+                    b.ToTable("Starboard");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.StarboardVote", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Vote", b =>
                 {
                     b.Property<ulong>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("StarboardMessageID")
+                    b.Property<ulong?>("MessageID")
                         .HasColumnType("bigint unsigned");
 
                     b.Property<ulong>("UserId")
@@ -140,18 +156,25 @@ namespace Catalina.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("StarboardMessageID");
+                    b.HasIndex("MessageID");
 
                     b.ToTable("StarboardVotes");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.GuildProperty", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.Emoji", "StarboardEmoji")
+                    b.HasOne("Catalina.Database.Models.Starboard", "Starboard")
                         .WithMany()
-                        .HasForeignKey("StarboardEmojiNameOrID");
+                        .HasForeignKey("StarboardID");
 
-                    b.Navigation("StarboardEmoji");
+                    b.Navigation("Starboard");
+                });
+
+            modelBuilder.Entity("Catalina.Database.Models.Message", b =>
+                {
+                    b.HasOne("Catalina.Database.Models.Starboard", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("StarboardID");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Response", b =>
@@ -168,18 +191,20 @@ namespace Catalina.Migrations
                         .HasForeignKey("GuildPropertyID");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.StarboardMessage", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.GuildProperty", null)
-                        .WithMany("StarboardMessages")
-                        .HasForeignKey("GuildPropertyID");
+                    b.HasOne("Catalina.Database.Models.Emoji", "Emoji")
+                        .WithMany()
+                        .HasForeignKey("EmojiNameOrID");
+
+                    b.Navigation("Emoji");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.StarboardVote", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Vote", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.StarboardMessage", null)
-                        .WithMany("UserVotes")
-                        .HasForeignKey("StarboardMessageID");
+                    b.HasOne("Catalina.Database.Models.Message", null)
+                        .WithMany("Votes")
+                        .HasForeignKey("MessageID");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.GuildProperty", b =>
@@ -187,13 +212,16 @@ namespace Catalina.Migrations
                     b.Navigation("Responses");
 
                     b.Navigation("Roles");
-
-                    b.Navigation("StarboardMessages");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.StarboardMessage", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Message", b =>
                 {
-                    b.Navigation("UserVotes");
+                    b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }
