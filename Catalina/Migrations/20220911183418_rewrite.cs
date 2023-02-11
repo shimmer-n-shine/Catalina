@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Catalina.Migrations
 {
-    public partial class rewrite : Migration
+    public partial class rewrite2 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
