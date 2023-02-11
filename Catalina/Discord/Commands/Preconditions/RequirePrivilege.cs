@@ -5,6 +5,18 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Preconditions
 {
+    //public class RequireDev : PreconditionAttribute
+    //{
+    //    public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
+    //    {
+    //        if (context.User.Id == ulong.Parse(Environment.GetEnvironmentVariable(AppProperties.DeveloperID)))
+    //        {
+    //            return Task.FromResult(PreconditionResult.FromSuccess());
+    //        }
+    //        return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
+    //    }
+    //}
+
     public class RequirePrivilege : PreconditionAttribute
     {
         private readonly AccessLevel _requiredLevel;
