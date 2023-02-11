@@ -33,7 +33,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                 var value = autocompleteInteraction.Data.Current.Value as string;
 
                 var results = new List<AutocompleteResult>();
-                foreach (var r in database.GuildProperties.Include(g => g.Roles).SelectMany(g => g.Roles).AsNoTracking())
+                foreach (var r in database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles))
                 {
                    results.Add(new AutocompleteResult
                     {
