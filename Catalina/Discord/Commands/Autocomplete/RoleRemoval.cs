@@ -47,13 +47,15 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var names = results.Select(r => r.Name).ToList();
 
-                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
+                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
 
                 if (searchResults.Any())
                 {
+                    var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
+
                     var matches = new List<AutocompleteResult>();
 
-                    foreach (var result in searchResults)
+                    foreach (var result in cutResults)
                     {
                         matches.Add(results.FirstOrDefault(z => z.Name == result));
                     }
