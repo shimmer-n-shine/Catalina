@@ -4,7 +4,6 @@ using Discord;
 using Fergun.Interactive;
 using Discord.WebSocket;
 using System.Reflection;
-using NLog;
 using Discord.Interactions;
 using RunMode = Discord.Interactions.RunMode;
 using Catalina.Discord.Commands.TypeConverters;
@@ -38,10 +37,7 @@ namespace Catalina.Discord
             });
         }
         public static async Task SetupClient()
-        {
-            var logger = LogManager.GetCurrentClassLogger();
-
-            
+        {         
 
             InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
@@ -60,7 +56,7 @@ namespace Catalina.Discord
             DiscordClient.Ready += Events.Ready;
 
 
-            DiscordClient.Log += Events.Discord_Log;
+            DiscordClient.Log += Events.DiscordLog;
 
             await DiscordClient.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
 

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Threading.Tasks;
+using Serilog.Events;
 
 namespace Catalina
 {
@@ -7,6 +9,12 @@ namespace Catalina
     {
         static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration().
+                MinimumLevel.Verbose()
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .CreateLogger();
+
             ProgramData.Random = new Random();
             AppProperties.LoadEnvVars();
 

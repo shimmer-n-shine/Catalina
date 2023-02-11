@@ -2,7 +2,9 @@
 using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
+using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
-    public class RoleStylisation : AutocompleteHandler
+    public class RenameableRoles : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
@@ -27,8 +29,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var results = new List<AutocompleteResult>();
 
-                //var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
-                var preliminaryGuildRoleResults = database.GuildProperties.AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
+                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
 
                 var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
@@ -42,16 +43,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var names = results.Select(r => r.Name).ToList();
 
-
-                Dictionary<string, int> orderedResults = new();
-
-                names.ForEach(x =>
-                {
-                    var confidence = FuzzyString.ComparisonMetrics.LevenshteinDistance(value, x);
-                    orderedResults.Add(x, confidence);
-                });
-
-                var searchResults = orderedResults.OrderBy(x => x.Value);
+                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
 
                 if (searchResults.Any())
                 {
@@ -59,7 +51,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                     foreach (var result in searchResults)
                     {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result.Key));
+                        matches.Add(results.FirstOrDefault(z => z.Name == result));
                     }
 
                     var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
@@ -73,7 +65,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetCurrentClassLogger().Error(ex, ex.Message);
+                Log.Error(ex, ex.Message);
 
                 return AutocompletionResult.FromError(ex);
             }

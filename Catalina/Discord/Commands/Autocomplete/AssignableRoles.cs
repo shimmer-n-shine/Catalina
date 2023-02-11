@@ -3,10 +3,12 @@ using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FuzzySharp;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
@@ -40,28 +42,11 @@ namespace Catalina.Discord.Commands.Autocomplete
                 }).ToList();
 
                 if (string.IsNullOrEmpty(value))
-                    try
-                    {
-                        return AutocompletionResult.FromSuccess(results.Take(25));
-                    }
-                    catch
-                    {
-
-                    }
-                    
+                    return AutocompletionResult.FromSuccess(results.Take(25));
 
                 var names = results.Select(r => r.Name).ToList();
 
-
-                Dictionary<string, int> orderedResults = new();
-
-                names.ForEach(x =>
-                {
-                    var confidence = FuzzyString.ComparisonMetrics.LevenshteinDistance(value, x);
-                    orderedResults.Add(x, confidence);
-                });
-
-                var searchResults = orderedResults.OrderBy(x => x.Value);
+                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
 
                 if (searchResults.Any())
                 {
@@ -69,7 +54,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                     foreach (var result in searchResults)
                     {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result.Key));
+                        matches.Add(results.FirstOrDefault(z => z.Name == result));
                     }
 
                     var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
@@ -83,7 +68,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetCurrentClassLogger().Error(ex, ex.Message);
+                Log.Error(ex, ex.Message);
 
                 return AutocompletionResult.FromError(ex);
             }

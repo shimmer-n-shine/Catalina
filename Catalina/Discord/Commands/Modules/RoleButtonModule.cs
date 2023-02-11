@@ -4,6 +4,7 @@ using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,8 +32,8 @@ public class RoleButtonModule : InteractionModuleBase
             catch
             {
                 await Context.Interaction.DeferAsync();
-                await RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.UnknownError("Button was unable to be removed, and the role being assigned is inalid, please let the server administrator(s) know that this happened") }, ephemeral: true);
-                NLog.LogManager.GetCurrentClassLogger().Error($"Could not remove button from message {message.Id} in guild {Context.Guild.Name} ({Context.Guild.Id})");
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.UnknownError("Button was unable to be removed, and the role being assigned is inalid, please let the server administrator(s) know that this happened") }, ephemeral: true);
+                Log.Error($"Could not remove button from message {message.Id} in guild {Context.Guild.Name} ({Context.Guild.Id})");
                 return;
             }
 
@@ -51,7 +52,7 @@ public class RoleButtonModule : InteractionModuleBase
             {
                 await Context.Interaction.DeferAsync();
                 await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.UnknownError($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened.") }, ephemeral: true, allowedMentions: AllowedMentions.None);
-                NLog.LogManager.GetCurrentClassLogger().Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
+                Log.Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
                 throw new Exception($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
             }
         }
@@ -67,7 +68,7 @@ public class RoleButtonModule : InteractionModuleBase
             {
                 await Context.Interaction.DeferAsync();
                 await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.UnknownError($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened") }, ephemeral: true, allowedMentions: AllowedMentions.None);
-                NLog.LogManager.GetCurrentClassLogger().Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
+                Log.Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
                 throw new Exception($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
             }
         }
@@ -80,7 +81,7 @@ public class RoleButtonModule : InteractionModuleBase
         [SlashCommand("add", "add a reaction button")]
         public async Task AddRoleButtonToMessageAsync(
             [Summary("MessageLink")] string messageLink,
-            [Summary("Role")] [Autocomplete(typeof(AssignableRoles))] string roleID,
+            [Summary("Role")][Autocomplete(typeof(AssignableRoles))] string roleID,
             [Summary("Emoji")] string emoji)
         {
             EmbedBuilder embed;
@@ -90,36 +91,38 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidParameter("The role you provided is invalid") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidParameter("The role you provided is invalid") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
             var role = Context.Guild.GetRole(ulong.Parse(roleID));
 
-            if ( role is null) {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidRole("The role you provided could not be found") };
+            if (role is null)
+            {
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidRole("The role you provided could not be found") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
-            } 
+            }
 
-            if (!await Utils.VerifyRoleForUser(Context, ulong.Parse(roleID))) {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InsufficientPermissions() };
+            if (!await Utils.VerifyRoleForUser(Context, ulong.Parse(roleID)))
+            {
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InsufficientPermissions() };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             using var database = new DatabaseContextFactory().CreateDbContext();
-            
+
             var message = await Utils.GetMessageFromLink(Context, messageLink);
 
             if (message == null)
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not process message link, is it from the current guild?") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not process message link, is it from the current guild?") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
-            
+
             Database.Models.Emoji catalinaEmoji;
             IEmote emote;
             try
@@ -129,7 +132,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception exception)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) {Exception = exception });
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = exception });
                 return;
             }
 
@@ -139,21 +142,21 @@ public class RoleButtonModule : InteractionModuleBase
                 messageComponents = messageComponents.WithButton(emote: emote, label: role.Name, customId: ComponentConstants.AddRoleButton.Replace("*", role.Id.ToString()), style: ButtonStyle.Secondary);
                 await (message as IUserMessage).ModifyAsync(msg => msg.Components = messageComponents.Build());
 
-                await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User), ephemeral: true);
+                await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
             }
             catch
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not add button, is the message linked from Catalina?") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not add button, is the message linked from Catalina?") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
-            await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User));
+            await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
         }
         [SlashCommand("remove", "remove a reaction button")]
         public async Task RemoveRoleButtonFromMessageAsync(
-            [Summary("MessageLink")] string messageLink, 
-            [Summary("Role")] [Autocomplete(typeof(AssignableRoles))] string roleID,
+            [Summary("MessageLink")] string messageLink,
+            [Summary("Role")][Autocomplete(typeof(AssignableRoles))] string roleID,
             [Summary("Emoji")] string emoji)
         {
             EmbedBuilder embed;
@@ -163,7 +166,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidParameter("The role you provided is invalid") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidParameter("The role you provided is invalid") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -171,14 +174,14 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (role is null)
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidRole("The role you provided could not be found") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidRole("The role you provided could not be found") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             if (!await Utils.VerifyRoleForUser(Context, ulong.Parse(roleID)))
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InsufficientPermissions() };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InsufficientPermissions() };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -189,7 +192,7 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (message == null)
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not process message link, is it from the current guild?") };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Common.Exceptions.InvalidMessageLink("Could not process message link, is it from the current guild?") };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -204,7 +207,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception exception)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage (user: Context.User) { Exception = exception });
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = exception });
                 return;
             }
 
@@ -212,19 +215,19 @@ public class RoleButtonModule : InteractionModuleBase
             {
                 var messageComponents = ComponentBuilder.FromComponents(message.Components).ActionRows.SelectMany(r => r.Components)
                     .Where(c => !(c.CustomId.Contains(role.Id.ToString()) || (c.Type == ComponentType.Button && (c as ButtonComponent).Emote == emote))).ToList();
-                
+
                 await (message as IUserMessage).ModifyAsync(msg => msg.Components = ComponentBuilder.FromComponents(messageComponents).Build());
 
-                await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User), ephemeral: true);
+                await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
             }
             catch (Exception e)
             {
-                embed = new Utils.ErrorMessage (user: Context.User) { Exception = e };
+                embed = new Utils.ErrorMessage(user: Context.User) { Exception = e };
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
-            await RespondAsync(embed: new Utils.AcknowledgementMessage (user: Context.User));
+            await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
         }
         [RequirePrivilege(AccessLevel.Administrator)]
         [SlashCommand("removeall", "remove a reaction button")]
@@ -244,7 +247,7 @@ public class RoleButtonModule : InteractionModuleBase
                 return;
             }
             try
-            {  
+            {
                 await (message as IUserMessage).ModifyAsync(msg => msg.Components = new ComponentBuilder().Build());
                 await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
             }

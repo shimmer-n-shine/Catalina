@@ -7,13 +7,15 @@ using Discord.Commands;
 using Microsoft.EntityFrameworkCore;
 using Discord.Interactions;
 using System.Linq;
+using System.Text;
+using Catalina.Database.Models;
+using Serilog.Events;
+using Serilog;
 
 namespace Catalina.Discord
 {
     class Events
     {
-        
-
         internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
             if (reaction.User.Value.IsBot || reaction.User.Value.Discriminator == "0000") return;
@@ -66,8 +68,7 @@ namespace Catalina.Discord
         {
             await using var database = new DatabaseContextFactory().CreateDbContext();
 
-            //var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
-            var guildProperty = database.GuildProperties.FirstOrDefault(g => g.ID == user.Guild.Id);
+            var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
             if (guildProperty is null) return;
 
             try
@@ -76,7 +77,7 @@ namespace Catalina.Discord
             }
             catch
             {
-                NLog.LogManager.GetCurrentClassLogger().Error("Could not add automatic roles to user");
+                Log.Error("Could not add automatic roles to user");
             }
             
 
@@ -109,55 +110,25 @@ namespace Catalina.Discord
             await using var database = new DatabaseContextFactory().CreateDbContext();
         }
 
-        internal static Task Discord_Log(LogMessage msg)
+        internal static async Task DiscordLog(LogMessage message)
         {
-            var logger = NLog.LogManager.GetCurrentClassLogger();
-
-            switch (msg.Severity)
+            var severity = message.Severity switch
             {
-                case LogSeverity.Critical:
-                    if (msg.Exception is not null)
-                        logger.Fatal(msg.Exception, $"{msg.Message}");
-                    else
-                        logger.Fatal($"{msg.Message}");
-                    break;
-                case LogSeverity.Debug:
-                    if (msg.Exception is not null)
-                        logger.Debug(msg.Exception, $"{msg.Source}");
-                    else
-                        logger.Debug($"{msg.Message}");
-                    break;
-                case LogSeverity.Error:
-                    if (msg.Exception is not null)
-                        logger.Error(msg.Exception, $"{msg.Message}");
-                    else
-                        logger.Error($"{msg.Message}");
-                    break;
-                case LogSeverity.Info:
-                    if (msg.Exception is not null)
-                        logger.Info(msg.Exception, $"{msg.Message}");
-                    else
-                        logger.Info($"{msg.Message}");
-                    break;
-                case LogSeverity.Verbose:
-                    if (msg.Exception is not null)
-                        logger.Debug(msg.Exception, $"{msg.Message}");
-                    else
-                        logger.Debug($"{msg.Message}");
-                    break;
-                case LogSeverity.Warning:
-                    if (msg.Exception is not null)
-                        logger.Warn(msg.Exception, $"{msg.Message}");
-                    else
-                        logger.Warn($"{msg.Message}");
-                    break;
+                LogSeverity.Critical => LogEventLevel.Fatal,
+                LogSeverity.Error => LogEventLevel.Error,
+                LogSeverity.Warning => LogEventLevel.Warning,
+                LogSeverity.Info => LogEventLevel.Information,
+                LogSeverity.Verbose => LogEventLevel.Verbose,
+                LogSeverity.Debug => LogEventLevel.Debug,
+                _ => LogEventLevel.Information
             };
 
-            return Task.CompletedTask;
+            Log.Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
+            await Task.CompletedTask;
         }
-
         internal static async Task Ready()
         {
+
             if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID))) 
             {
                 #if DEBUG
@@ -170,7 +141,7 @@ namespace Catalina.Discord
                 #endif
             }
             await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
-            NLog.LogManager.GetCurrentClassLogger().Info("Discord Ready!");
+            Log.Information("Discord Ready!");
         }
 
         internal static async Task TickGuild(IInteractionContext context)

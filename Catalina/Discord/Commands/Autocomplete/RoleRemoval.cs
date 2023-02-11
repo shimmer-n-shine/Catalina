@@ -2,7 +2,9 @@
 using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
+using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,8 +33,7 @@ namespace Catalina.Discord.Commands.Autocomplete
                 var value = autocompleteInteraction.Data.Current.Value as string;
 
                 var results = new List<AutocompleteResult>();
-                //foreach (var r in database.GuildProperties.Include(g => g.Roles).SelectMany(g => g.Roles).AsNoTracking())
-                foreach (var r in database.GuildProperties.AsNoTracking())
+                foreach (var r in database.GuildProperties.Include(g => g.Roles).SelectMany(g => g.Roles).AsNoTracking())
                 {
                    results.Add(new AutocompleteResult
                     {
@@ -46,16 +47,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var names = results.Select(r => r.Name).ToList();
 
-
-                Dictionary<string, int> orderedResults = new();
-
-                names.ForEach(x =>
-                {
-                    var confidence = FuzzyString.ComparisonMetrics.LevenshteinDistance(value, x);
-                    orderedResults.Add(x, confidence);
-                });
-
-                var searchResults = orderedResults.OrderBy(x => x.Value);
+                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
 
                 if (searchResults.Any())
                 {
@@ -63,7 +55,7 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                     foreach (var result in searchResults)
                     {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result.Key));
+                        matches.Add(results.FirstOrDefault(z => z.Name == result));
                     }
 
                     var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
@@ -77,7 +69,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             }
             catch (Exception ex)
             {
-                NLog.LogManager.GetCurrentClassLogger().Error(ex, ex.Message);
+                Log.Error(ex, ex.Message);
 
                 return AutocompletionResult.FromError(ex);
             }
