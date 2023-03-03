@@ -6,11 +6,10 @@ using Discord.WebSocket;
 using System.Reflection;
 using Discord.Interactions;
 using RunMode = Discord.Interactions.RunMode;
-using Catalina.Discord.Commands.TypeConverters;
 
 namespace Catalina.Discord
 {
-    public class Discord
+    public class Discord 
     {
         public static readonly DiscordSocketClient DiscordClient;
         public static readonly InteractiveService InteractiveService;
@@ -38,27 +37,14 @@ namespace Catalina.Discord
         }
         public static async Task SetupClient()
         {         
-
-            InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
-
             await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
-            
 
-            DiscordClient.UserJoined += Events.GuildMemberAdded;
-            DiscordClient.MessageDeleted += Events.MessageDeleted;
-            DiscordClient.MessageReceived += Events.MessageCreated;
-            DiscordClient.InteractionCreated += Events.InteractionCreated;
-            DiscordClient.ReactionAdded += Events.ReactionAdded;
-            DiscordClient.ReactionRemoved += Events.ReactionRemoved;
-            DiscordClient.ReactionsCleared += Events.ReactionsCleared;
-            DiscordClient.JoinedGuild += Events.JoinedGuild;
-            DiscordClient.LeftGuild += Events.LeftGuild;
+
+            DiscordClient.GuildMemberUpdated += Events.GuildMemberUpdated;
             DiscordClient.Ready += Events.Ready;
-
-
             DiscordClient.Log += Events.DiscordLog;
 
-            await DiscordClient.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
+            await DiscordClient.LoginAsync(TokenType.Bot, AppConfig.DiscordToken);
 
             await DiscordClient.StartAsync();
         }

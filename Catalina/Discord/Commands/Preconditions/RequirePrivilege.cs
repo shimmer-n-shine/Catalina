@@ -5,17 +5,17 @@ using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Preconditions
 {
-    //public class RequireDev : PreconditionAttribute
-    //{
-    //    public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
-    //    {
-    //        if (context.User.Id == ulong.Parse(Environment.GetEnvironmentVariable(AppProperties.DeveloperID)))
-    //        {
-    //            return Task.FromResult(PreconditionResult.FromSuccess());
-    //        }
-    //        return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
-    //    }
-    //}
+    public class RequireDev : PreconditionAttribute
+    {
+        public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
+        {
+            if (context.User.Id == AppConfig.DeveloperID)
+            {
+                return Task.FromResult(PreconditionResult.FromSuccess());
+            }
+            return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
+        }
+    }
 
     public class RequirePrivilege : PreconditionAttribute
     {
@@ -45,15 +45,15 @@ namespace Catalina.Discord.Commands.Preconditions
 
             if (ctx.User is IGuildUser user)
             {
-                if (ctx.Guild.OwnerId == user.Id || user.GuildPermissions.Administrator)
+                if (ctx.Guild.OwnerId == user.Id || user.GuildPermissions.Has(PermissionConstants.TrueAdministrator))
                 {
                     return AccessLevel.SuperAdministrator;
                 }
-                if (user.GuildPermissions.ManageChannels && user.GuildPermissions.ManageGuild && user.GuildPermissions.BanMembers)
+                if (user.GuildPermissions.Has(PermissionConstants.Administrator))
                 {
                     return AccessLevel.Administrator;
                 }
-                if (user.GuildPermissions.KickMembers && user.GuildPermissions.ManageMessages)
+                if (user.GuildPermissions.Has(PermissionConstants.Moderator))
                 {
                     return AccessLevel.Moderator;
                 }

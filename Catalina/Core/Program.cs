@@ -16,7 +16,7 @@ namespace Catalina
                 .CreateLogger();
 
             ProgramData.Random = new Random();
-            AppProperties.LoadEnvVars();
+            AppConfig.LoadConfig();
 
             ProgramData.StartTime = DateTime.UtcNow;
             await Discord.Discord.SetupClient();
