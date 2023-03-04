@@ -1,8 +1,5 @@
 ﻿using Discord;
-using Humanizer;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace Catalina.Discord
 {
@@ -127,32 +124,5 @@ namespace Catalina.Discord
 
         private static Dictionary<string, Color> _dictionaryColours;
         #endregion
-
-        public static Color FromName(string input)
-        {
-            var fields = typeof(CatalinaColours).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (var prop in fields)
-            {
-                if (input.ToLower().Equals(prop.Name.ToLower()))
-                {
-                    return (Color) prop.GetValue(null);
-                }
-            }
-            throw new System.ArgumentException("could not get colour from name");
-        }
-        public static Dictionary<string,Color> ToDictionary()
-        {
-            if (_dictionaryColours is null)
-            {
-                _dictionaryColours = new Dictionary<string, Color>();
-                var fields = typeof(CatalinaColours).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                foreach (var prop in fields)
-                {
-                    _dictionaryColours.Add(prop.Name.Humanize(LetterCasing.Title), (Color)prop.GetValue(null));
-                }
-            }
-
-            return _dictionaryColours;
-        } 
     }
 }

@@ -3,11 +3,7 @@ using System.Threading.Tasks;
 using Serilog.Events;
 using Serilog;
 using Discord.WebSocket;
-using System;
-using static System.Collections.Specialized.BitVector32;
 using System.Linq;
-using Discord.Interactions;
-using System.Net.Sockets;
 
 namespace Catalina.Discord
 {
@@ -36,26 +32,26 @@ namespace Catalina.Discord
             bool added = false;
             if (NewMember.IsBot  || NewMember.Discriminator == "0000") return;
             //komkommer is the smartest developer
-            var delta = OldMember.HasValue ? (NewMember.Roles.Select(r => r.Id).Except(OldMember.Value.Roles.Select(r => r.Id))).ToList() : null;
-            if (delta.Count == 0) return;
+            if (OldMember.HasValue && OldMember.Value.Roles.Count < NewMember.Roles.Count) { added = true; }
 
-            if (NewMember.Roles.Select(r => r.Id).Contains(delta.First()))
+            if (added)
             {
-                added = true;
-            }
+                var delta = OldMember.HasValue ? (NewMember.Roles.Select(r => r.Id).Except(OldMember.Value.Roles.Select(r => r.Id))).ToList() : null;
 
-            if (delta.Intersect(AppConfig.RoleIDs).Any())
-            {
-                var role = NewMember.Guild.GetRole(delta.Intersect(AppConfig.RoleIDs).First());
-                var channel = NewMember.Guild.GetChannel(AppConfig.ChannelID);
-                if (role is not null && channel is not null && added is true) 
+                if (delta.Intersect(AppConfig.RoleIDs).Any())
                 {
-                    await (channel as ITextChannel).SendMessageAsync(embed: 
-                        new Utils.AcknowledgementMessage(user: NewMember, title: $"Welcome {(string.IsNullOrWhiteSpace(NewMember.Nickname) ? NewMember.Username : NewMember.Nickname)}!", body: $"You have been given the {role.Mention} role!\n" +
-                        $"Make sure to fill out the form at {AppConfig.FormLink} to get registered into our supporter database for relevant perks and rewards!", color: new Color(0x86cfea) //the aether blue
-                    ), allowedMentions: AllowedMentions.None);
+                    var role = NewMember.Guild.GetRole(delta.Intersect(AppConfig.RoleIDs).First());
+                    var channel = NewMember.Guild.GetChannel(AppConfig.ChannelID);
+                    if (role is not null && channel is not null && added is true)
+                    {
+                        await (channel as ITextChannel).SendMessageAsync(text: $"Welcome {NewMember.Mention}!",
+                            embed: new Utils.AcknowledgementMessage(user: NewMember, title: $"You have been given the {role.Name} role!",
+                            body: $"Make sure to fill out the form at {AppConfig.FormLink} to get registered into our supporter database for relevant perks and rewards!", color: new Color(0x86cfea) //the aether blue
+                        ), allowedMentions: new AllowedMentions { UserIds = { NewMember.Id } });
+                    }
                 }
             }
+           
         }
 
         internal static async Task Ready()
