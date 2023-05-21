@@ -6,11 +6,15 @@ namespace Catalina.Database
 {
     public class DatabaseContext : DbContext
     {
-        public DatabaseContext(DbContextOptions dbContextOptions) : base(dbContextOptions) { }
+        public DatabaseContext(DbContextOptions<DatabaseContext> dbContextOptions) : base(dbContextOptions) 
+        {
+            this.ChangeTracker.LazyLoadingEnabled = true;
+        }
         public DbSet<GuildProperty> GuildProperties { get; set; }
         public DbSet<Response> Responses { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Message> StarboardMessages { get; set; }
+        public DbSet<Starboard> Starboards { get; set; }
         public DbSet<Emoji> Emojis { get; set; }
         public DbSet<Vote> StarboardVotes { get; set; }
 

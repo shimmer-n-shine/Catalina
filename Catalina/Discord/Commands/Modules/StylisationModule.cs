@@ -15,6 +15,7 @@ namespace Catalina.Discord.Commands.Modules
     [Group("style", "User stylisation")]
     public class StylisationModule : InteractionModuleBase
     {
+        public DatabaseContext database { get; set; }
         [SlashCommand("colour", "Change role colour")]
         public async Task ConfigureRole(
             [Summary("Role")][Autocomplete(typeof(ColourableRoles))] string roleID,
@@ -26,7 +27,6 @@ namespace Catalina.Discord.Commands.Modules
                 return;
             }
 
-            using var database = new DatabaseContextFactory().CreateDbContext();
             var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
             Database.Models.Role DBrole;
 
@@ -78,7 +78,6 @@ namespace Catalina.Discord.Commands.Modules
                 return;
             }
 
-            using var database = new DatabaseContextFactory().CreateDbContext();
             var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
             Database.Models.Role DBrole;
 

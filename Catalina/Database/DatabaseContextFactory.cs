@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Proxies;
+using Microsoft.Extensions.Configuration;
 using System;
 
 namespace Catalina.Database
@@ -9,8 +10,9 @@ namespace Catalina.Database
     {
         public DatabaseContext CreateDbContext(string[] args = null)
         {
-            AppProperties.LoadEnvVars();
-            var ConnStr = Environment.GetEnvironmentVariable(AppProperties.ConnectionString);
+            var config = new ConfigurationBuilder().AddIniFile("config.ini").Build().Get<Core.Configuration>();
+
+            var ConnStr = config.Core.ConnectionString;
             var serverVersion = ServerVersion.AutoDetect(ConnStr);
             var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
             optionsBuilder

@@ -5,6 +5,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,8 @@ using System.Threading.Tasks;
 namespace Catalina.Discord.Commands.Modules;
 public class RoleButtonModule : InteractionModuleBase
 {
+    public Logger Log { get; set; }
+
     [ComponentInteraction("addRole:*", true)]
     public async Task AddRole(ulong roleId)
     {
@@ -111,8 +114,6 @@ public class RoleButtonModule : InteractionModuleBase
                 return;
             }
 
-            using var database = new DatabaseContextFactory().CreateDbContext();
-
             var message = await Utils.GetMessageFromLink(Context, messageLink);
 
             if (message == null)
@@ -186,8 +187,6 @@ public class RoleButtonModule : InteractionModuleBase
                 return;
             }
 
-            using var database = new DatabaseContextFactory().CreateDbContext();
-
             var message = await Utils.GetMessageFromLink(Context, messageLink);
 
             if (message == null)
@@ -235,8 +234,6 @@ public class RoleButtonModule : InteractionModuleBase
             [Summary("MessageLink")] string messageLink)
         {
             EmbedBuilder embed;
-
-            using var database = new DatabaseContextFactory().CreateDbContext();
 
             var message = await Utils.GetMessageFromLink(Context, messageLink);
 

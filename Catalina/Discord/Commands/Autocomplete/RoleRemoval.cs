@@ -4,7 +4,9 @@ using Discord;
 using Discord.Interactions;
 using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +23,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             IServiceProvider services
         )
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            using var database = services.GetRequiredService<DatabaseContext>();
 
             if (!(await new RequirePrivilege(AccessLevel.Administrator).CheckRequirementsAsync(context, null, services)).IsSuccess)
             {
@@ -71,7 +73,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             }
             catch (Exception ex)
             {
-                Log.Error(ex, ex.Message);
+                services.GetRequiredService<Logger>().Error(ex, ex.Message);
 
                 return AutocompletionResult.FromError(ex);
             }

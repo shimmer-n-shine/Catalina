@@ -1,10 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
+#nullable disable
+
 namespace Catalina.Migrations
 {
-    public partial class rewrite2 : Migration
+    /// <inheritdoc />
+    public partial class helloworld : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
@@ -25,7 +29,7 @@ namespace Catalina.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Starboard",
+                name: "Starboards",
                 columns: table => new
                 {
                     ID = table.Column<ulong>(type: "bigint unsigned", nullable: false)
@@ -37,13 +41,12 @@ namespace Catalina.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Starboard", x => x.ID);
+                    table.PrimaryKey("PK_Starboards", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_Starboard_Emojis_EmojiNameOrID",
+                        name: "FK_Starboards_Emojis_EmojiNameOrID",
                         column: x => x.EmojiNameOrID,
                         principalTable: "Emojis",
-                        principalColumn: "NameOrID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "NameOrID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -59,11 +62,10 @@ namespace Catalina.Migrations
                 {
                     table.PrimaryKey("PK_GuildProperties", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_GuildProperties_Starboard_StarboardID",
+                        name: "FK_GuildProperties_Starboards_StarboardID",
                         column: x => x.StarboardID,
-                        principalTable: "Starboard",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalTable: "Starboards",
+                        principalColumn: "ID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -82,11 +84,10 @@ namespace Catalina.Migrations
                 {
                     table.PrimaryKey("PK_StarboardMessages", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_StarboardMessages_Starboard_StarboardID",
+                        name: "FK_StarboardMessages_Starboards_StarboardID",
                         column: x => x.StarboardID,
-                        principalTable: "Starboard",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalTable: "Starboards",
+                        principalColumn: "ID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -111,8 +112,7 @@ namespace Catalina.Migrations
                         name: "FK_Responses_GuildProperties_GuildPropertyID",
                         column: x => x.GuildPropertyID,
                         principalTable: "GuildProperties",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -133,8 +133,7 @@ namespace Catalina.Migrations
                         name: "FK_Roles_GuildProperties_GuildPropertyID",
                         column: x => x.GuildPropertyID,
                         principalTable: "GuildProperties",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -154,8 +153,7 @@ namespace Catalina.Migrations
                         name: "FK_StarboardVotes_StarboardMessages_MessageID",
                         column: x => x.MessageID,
                         principalTable: "StarboardMessages",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -175,14 +173,14 @@ namespace Catalina.Migrations
                 column: "GuildPropertyID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Starboard_EmojiNameOrID",
-                table: "Starboard",
-                column: "EmojiNameOrID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_StarboardMessages_StarboardID",
                 table: "StarboardMessages",
                 column: "StarboardID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Starboards_EmojiNameOrID",
+                table: "Starboards",
+                column: "EmojiNameOrID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StarboardVotes_MessageID",
@@ -190,6 +188,7 @@ namespace Catalina.Migrations
                 column: "MessageID");
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
@@ -208,7 +207,7 @@ namespace Catalina.Migrations
                 name: "StarboardMessages");
 
             migrationBuilder.DropTable(
-                name: "Starboard");
+                name: "Starboards");
 
             migrationBuilder.DropTable(
                 name: "Emojis");

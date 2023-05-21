@@ -7,6 +7,8 @@ using System.Reflection;
 using Discord.Interactions;
 using RunMode = Discord.Interactions.RunMode;
 using Catalina.Discord.Commands.TypeConverters;
+using Catalina.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Catalina.Discord
 {
@@ -15,6 +17,7 @@ namespace Catalina.Discord
         public static readonly DiscordSocketClient DiscordClient;
         public static readonly InteractiveService InteractiveService;
         public static readonly InteractionService InteractionService;
+        private static ServiceProvider _services;
         static Discord()
         {
             DiscordClient = new DiscordSocketClient(new DiscordSocketConfig()
@@ -36,12 +39,14 @@ namespace Catalina.Discord
                 LogLevel = LogSeverity.Verbose
             });
         }
-        public static async Task SetupClient()
-        {         
-
+        public static async Task SetupClient(ServiceProvider services)
+        {
+            _services = services;
+            Events.Services = services;
+            Starboard.Services = services;
             InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
-            await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), null);
+            await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
             
 
             DiscordClient.UserJoined += Events.GuildMemberAdded;
@@ -58,7 +63,7 @@ namespace Catalina.Discord
 
             DiscordClient.Log += Events.DiscordLog;
 
-            await DiscordClient.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable(AppProperties.DiscordToken));
+            await DiscordClient.LoginAsync(TokenType.Bot, _services.GetRequiredService<Configuration>().Core.DiscordToken);
 
             await DiscordClient.StartAsync();
         }

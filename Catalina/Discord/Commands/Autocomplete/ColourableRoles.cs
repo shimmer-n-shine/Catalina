@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FuzzySharp;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 
 namespace Catalina.Discord.Commands.Autocomplete
 {
@@ -22,7 +24,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             IServiceProvider services
         )
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            using var database = services.GetRequiredService<DatabaseContext>();
 
             try
             {
@@ -68,7 +70,7 @@ namespace Catalina.Discord.Commands.Autocomplete
             }
             catch (Exception ex)
             {
-                Log.Error(ex, ex.Message);
+                services.GetRequiredService<Logger>().Error(ex, ex.Message);
 
                 return AutocompletionResult.FromError(ex);
             }

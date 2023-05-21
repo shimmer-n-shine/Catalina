@@ -11,16 +11,18 @@ using System.Text;
 using Catalina.Database.Models;
 using Serilog.Events;
 using Serilog;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 
 namespace Catalina.Discord
 {
-    class Events
+    public static class Events
     {
+        public static ServiceProvider Services;
         internal static async Task ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
-            if (reaction.User.Value.IsBot || reaction.User.Value.Discriminator == "0000") return;
-
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            if (reaction.User.Value.IsBot || reaction.User.Value.IsWebhook) return;
+            using var database = Services.GetRequiredService<DatabaseContext>();
 
             var guild = (channel.Value as IGuildChannel).Guild;
             if (database.GuildProperties.Any(g => g.ID == guild.Id))
@@ -50,23 +52,24 @@ namespace Catalina.Discord
 
         internal static async Task ReactionRemoved(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
         }
 
         internal static async Task MessageCreated(SocketMessage arg)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
 
         }
 
         internal static async Task ReactionsCleared(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
+            //its ok D.NET will catch these
         }
 
         internal static async Task GuildMemberAdded(SocketGuildUser user)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            using var database = Services.GetRequiredService<DatabaseContext>();
 
             var guildProperty = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == user.Guild.Id);
             if (guildProperty is null) return;
@@ -77,7 +80,7 @@ namespace Catalina.Discord
             }
             catch
             {
-                Log.Error("Could not add automatic roles to user");
+                Services.GetRequiredService<Logger>().Error("Could not add automatic roles to user");
             }
             
 
@@ -85,29 +88,24 @@ namespace Catalina.Discord
 
         internal static async Task MessageDeleted(Cacheable<IMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
         }
 
         internal static async Task InteractionCreated(SocketInteraction socketInteraction)
         {
             var context = new SocketInteractionContext(Discord.DiscordClient, socketInteraction);
             await TickGuild(context);
-            await Discord.InteractionService.ExecuteCommandAsync(context, null);
-        }
-
-        internal static async Task GuildPingAsync(ulong guildID)
-        {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            await Discord.InteractionService.ExecuteCommandAsync(context, Services);
         }
 
         internal static async Task LeftGuild(SocketGuild arg)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
         }
 
         internal static async Task JoinedGuild(SocketGuild arg)
         {
-            await using var database = new DatabaseContextFactory().CreateDbContext();
+            throw new NotImplementedException("its ok D.NET will catch these");
         }
 
         internal static async Task DiscordLog(LogMessage message)
@@ -123,30 +121,19 @@ namespace Catalina.Discord
                 _ => LogEventLevel.Information
             };
 
-            Log.Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
+            Services.GetRequiredService<Logger>().Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
             await Task.CompletedTask;
         }
         internal static async Task Ready()
         {
-
-            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID))) 
-            {
-                #if DEBUG
-                if (ulong.TryParse(Environment.GetEnvironmentVariable(AppProperties.DeveloperGuildID), out ulong guildID)) 
-                {
-                    await Discord.InteractionService.RegisterCommandsToGuildAsync(guildID);
-                }
-                #else
-                await Discord.InteractionService.RegisterCommandsGloballyAsync();
-                #endif
-            }
+            await Discord.InteractionService.RegisterCommandsGloballyAsync();
             await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
-            Log.Information("Discord Ready!");
+            Services.GetRequiredService<Logger>().Information("Discord Ready!");
         }
 
         internal static async Task TickGuild(IInteractionContext context)
         {
-            using var database = new DatabaseContextFactory().CreateDbContext();
+            using var database = Services.GetRequiredService<DatabaseContext>();
 
             if (database.GuildProperties.Find(context.Guild.Id) == null)
             {

@@ -5,6 +5,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +17,17 @@ namespace Catalina.Discord.Commands.Modules
     [Group("config", "Guild configurations")]
     public class ConfigurationModule : InteractionModuleBase
     {
+
+        
         [Group("starboard", "Starboard configuration")]
         public class StarboardConfiguration : InteractionModuleBase
         {
+            public Logger Log { get; set; }
+            public DatabaseContext database { get; set; }
             [SlashCommand("channel", "Set starboard channel")]
             public async Task SetStarboardChannel(
                 [Summary("Channel")][ChannelTypes(ChannelType.Text)] IChannel channel = null)
             {
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperty = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 guildProperty.Starboard.ChannelID = channel?.Id;
@@ -35,7 +39,6 @@ namespace Catalina.Discord.Commands.Modules
             public async Task SetStarboardEmoji(
                 [Summary("Emoji")] string emoji)
             {
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
                 IEmote emote;
                 Database.Models.Emoji catalinaEmoji;
@@ -65,7 +68,6 @@ namespace Catalina.Discord.Commands.Modules
                     await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new System.ArgumentException("Threshhold cannot be less than 1.") });
                     return;
                 }
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 guildProperties.Starboard.Threshhold = threshhold;
@@ -81,12 +83,13 @@ namespace Catalina.Discord.Commands.Modules
 
         public class RoleConfiguration : InteractionModuleBase
         {
+            public Logger Log { get; set; }
+            public DatabaseContext database { get; set; }
             [SlashCommand("modify", "Modify role configuration")]
             public async Task ConfigureRole(
                 [Summary("Role")] IRole role,
                 [ComplexParameter] RoleProperties roleConfig)
             {
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
                 Database.Models.Role DBrole;
                 DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == role.Id);
@@ -169,7 +172,6 @@ namespace Catalina.Discord.Commands.Modules
             [SlashCommand("list", "List guild role configurations")]
             public async Task ListRoles()
             {
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 EmbedBuilder embed = new Utils.InformationMessage(user: Context.User) { Title = $"Configured roles for {Context.Guild.Name}: " };
@@ -195,7 +197,6 @@ namespace Catalina.Discord.Commands.Modules
             public async Task RemoveRole(
                 [Summary("Role")][Autocomplete(typeof(RoleRemoval))] string roleID)
             {
-                using var database = new DatabaseContextFactory().CreateDbContext();
                 var guildProperties = database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
 
                 EmbedBuilder embed;

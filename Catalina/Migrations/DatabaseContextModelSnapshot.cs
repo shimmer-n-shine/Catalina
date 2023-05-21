@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+#nullable disable
+
 namespace Catalina.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
@@ -14,8 +16,11 @@ namespace Catalina.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 64)
-                .HasAnnotation("ProductVersion", "5.0.7");
+                .HasAnnotation("ProductVersion", "7.0.5")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("Catalina.Database.Models.Emoji", b =>
                 {
@@ -139,7 +144,7 @@ namespace Catalina.Migrations
 
                     b.HasIndex("EmojiNameOrID");
 
-                    b.ToTable("Starboard");
+                    b.ToTable("Starboards");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Vote", b =>

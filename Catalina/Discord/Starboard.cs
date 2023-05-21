@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
 using static Catalina.Database.Models.Starboard;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Catalina.Discord;
-public class Starboard
+public static class Starboard
 {
+    public static ServiceProvider Services;
     public static async Task ProcessVote(GuildProperty guildProperty, IMessage dMessage, IUser user)
     {
-        using var database = new DatabaseContextFactory().CreateDbContext();
+        using var database = Services.GetRequiredService<DatabaseContext>();
         //modify incoming guildProperty to include starboard messages, better to do it here than upstream :)
 
         guildProperty = database.GuildProperties.Include(g => g.Starboard).First(g => g == guildProperty);
@@ -84,7 +86,7 @@ public class Starboard
 
     public static async Task<IMessage> PostStarboardMessage(GuildProperty guildProperty, IMessage message, uint votes)
     {
-        using var database = new DatabaseContextFactory().CreateDbContext();
+        using var database = Services.GetRequiredService<DatabaseContext>();
         var guild = (message.Channel as IGuildChannel).Guild;
         //guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty);
         IGuildChannel sbChannel;
@@ -110,7 +112,7 @@ public class Starboard
 
     public static async Task<IMessage> UpdateStarboardMessage(GuildProperty guildProperty, Database.Models.Message message, uint votes)
     {
-        using var database = new DatabaseContextFactory().CreateDbContext();
+        using var database = Services.GetRequiredService<DatabaseContext>();
         //guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty);
         IGuildChannel sbChannel;
         IGuildChannel ogChannel;

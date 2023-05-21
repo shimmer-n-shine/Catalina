@@ -35,7 +35,6 @@ public class Emoji
     }
     public static async Task<Emoji> ParseAsync(string emoji, DiscordNET.IGuild guild)
     {
-        using var database = new DatabaseContextFactory().CreateDbContext();
 
         try
         {

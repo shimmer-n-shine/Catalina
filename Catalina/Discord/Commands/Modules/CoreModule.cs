@@ -10,11 +10,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text;
 using Catalina.Discord;
+using Catalina.Database;
 
 namespace Catalina.Discord.Commands
 {
     public class CoreModule : InteractionModuleBase
     {
+
         [RequirePrivilege(AccessLevel.User)]
         [SlashCommand("ping", "Pong!")]
         public async Task PingMe()
