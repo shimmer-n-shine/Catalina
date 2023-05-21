@@ -51,8 +51,13 @@ namespace Catalina.Discord.Commands.Modules
 
                 if (results.Contains(id))
                 {
+                    bool ephemeral = true;
+                    if ((await Context.Guild.GetUsersAsync()).Where(u => u.RoleIds.Contains(id)).Count() > 1)
+                    {
+                        ephemeral = false;
+                    }
                     await role.ModifyAsync(r => r.Color = roleColor);
-                    await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User) { Body = $"Changed role colour to {System.Drawing.ColorTranslator.ToHtml(roleColor)}.", Color = roleColor }, ephemeral: true);
+                    await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User) { Body = $"Changed role colour to {System.Drawing.ColorTranslator.ToHtml(roleColor)}.", Color = roleColor }, ephemeral: ephemeral);
                 }
                 else
                 {
@@ -96,24 +101,29 @@ namespace Catalina.Discord.Commands.Modules
 
                 var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
                 var preliminaryUserRoleResults = (Context.User as IGuildUser).RoleIds;
-
                 var results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults);
+
 
 
                 if (results.Contains(id))
                 {
+                    bool ephemeral = true;
+                    if ((await Context.Guild.GetUsersAsync()).Where(u => u.RoleIds.Contains(id)).Count() > 1)
+                    {
+                        ephemeral = false;
+                    }
                     await role.ModifyAsync(r => r.Name = roleName);
-                    await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User) { Body = $"Changed role name to {roleName}.", Color = CatalinaColours.Green }, ephemeral: true);
+                    await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User) { Body = $"Changed role name to {roleName}.", Color = CatalinaColours.Green }, ephemeral: ephemeral);
                 }
                 else
                 {
-                    await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new UnauthorizedAccessException() }, ephemeral: true);
+                    await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new UnauthorizedAccessException() }, ephemeral: true);
                 }
 
             }
             catch
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
                 return;
             }
         }
