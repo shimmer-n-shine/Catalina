@@ -27,7 +27,7 @@ public class StylisationModule : InteractionModuleBase
             return;
         }
 
-        var guildProperties = Database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+        var guildProperties = Database.Guilds.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
         Database.Models.Role DBrole;
 
         DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == id);
@@ -43,7 +43,7 @@ public class StylisationModule : InteractionModuleBase
         {
             var role = Context.Guild.GetRole(ulong.Parse(roleID));
 
-            var preliminaryGuildRoleResults = Database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+            var preliminaryGuildRoleResults = Database.Guilds.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
             var preliminaryUserRoleResults = (Context.User as IGuildUser).RoleIds;
 
             var results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults);
@@ -83,7 +83,7 @@ public class StylisationModule : InteractionModuleBase
             return;
         }
 
-        var guildProperties = Database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+        var guildProperties = Database.Guilds.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
         Database.Models.Role DBrole;
 
         DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == id);
@@ -99,7 +99,7 @@ public class StylisationModule : InteractionModuleBase
         {
             var role = Context.Guild.GetRole(ulong.Parse(roleID));
 
-            var preliminaryGuildRoleResults = Database.GuildProperties.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
+            var preliminaryGuildRoleResults = Database.Guilds.Include(g => g.Roles).AsNoTracking().SelectMany(g => g.Roles).Where(r => r.IsRenamabale).Select(r => r.ID).ToList();
             var preliminaryUserRoleResults = (Context.User as IGuildUser).RoleIds;
             var results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults);
 

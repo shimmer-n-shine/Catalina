@@ -27,7 +27,7 @@ public class ConfigurationModule : InteractionModuleBase
         public async Task SetStarboardChannel(
             [Summary("Channel")][ChannelTypes(ChannelType.Text)] IChannel channel = null)
         {
-            var guildProperty = Database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperty = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
             guildProperty.Starboard.ChannelID = channel?.Id;
 
@@ -38,7 +38,7 @@ public class ConfigurationModule : InteractionModuleBase
         public async Task SetStarboardEmoji(
             [Summary("Emoji")] string emoji)
         {
-            var guildProperties = Database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
             IEmote emote;
             Database.Models.Emoji catalinaEmoji;
             try
@@ -67,7 +67,7 @@ public class ConfigurationModule : InteractionModuleBase
                 await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new System.ArgumentException("Threshhold cannot be less than 1.") });
                 return;
             }
-            var guildProperties = Database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
             guildProperties.Starboard.Threshhold = threshhold;
 
@@ -89,7 +89,7 @@ public class ConfigurationModule : InteractionModuleBase
             [Summary("Role")] IRole role,
             [ComplexParameter] RoleProperties roleConfig)
         {
-            var guildProperties = Database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = Database.Guilds.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
             Database.Models.Role DBrole;
             DBrole = guildProperties.Roles.FirstOrDefault(r => r.ID == role.Id);
             var failures = 0;
@@ -178,7 +178,7 @@ public class ConfigurationModule : InteractionModuleBase
         [SlashCommand("list", "List guild role configurations")]
         public async Task ListRoles()
         {
-            var guildProperties = Database.GuildProperties.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = Database.Guilds.Include(g => g.Roles).AsNoTracking().FirstOrDefault(g => g.ID == Context.Guild.Id);
 
             EmbedBuilder embed = new Utils.InformationMessage(user: Context.User) { Title = $"Configured roles for {Context.Guild.Name}: " };
 
@@ -203,7 +203,7 @@ public class ConfigurationModule : InteractionModuleBase
         public async Task RemoveRole(
             [Summary("Role")][Autocomplete(typeof(RemoveableRoles))] string roleID)
         {
-            var guildProperties = Database.GuildProperties.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperties = Database.Guilds.Include(g => g.Roles).FirstOrDefault(g => g.ID == Context.Guild.Id);
 
             EmbedBuilder embed;
             var roleToRemove = guildProperties.Roles.ToList().Find(r => r.ID == ulong.Parse(roleID));
@@ -255,7 +255,7 @@ public class ConfigurationModule : InteractionModuleBase
         public async Task EnableTimezonesFeature(
             [Summary("Enabled")] bool enabled = false)
         {
-            var guildProperty = Database.GuildProperties.FirstOrDefault(g => g.ID == Context.Guild.Id);
+            var guildProperty = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
             guildProperty.Timezones.Enabled = enabled;
 

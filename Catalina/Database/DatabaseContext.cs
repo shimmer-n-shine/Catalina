@@ -10,7 +10,7 @@ public class DatabaseContext : DbContext
     {
         this.ChangeTracker.LazyLoadingEnabled = true;
     }
-    public DbSet<Guild> GuildProperties { get; set; }
+    public DbSet<Guild> Guilds { get; set; }
     public DbSet<Response> Responses { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<Message> StarboardMessages { get; set; }

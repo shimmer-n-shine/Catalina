@@ -30,7 +30,7 @@ public class ColourableRoles : AutocompleteHandler
 
             var results = new List<AutocompleteResult>();
 
-            var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+            var preliminaryGuildRoleResults = database.Guilds.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
 
             var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
