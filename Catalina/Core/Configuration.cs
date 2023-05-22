@@ -16,5 +16,4 @@ public class Configuration
         public string ConnectionString { get; set; }
         public string DiscordToken { get; set; }
     }
-    
 }

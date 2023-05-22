@@ -8,6 +8,7 @@ using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
 using Serilog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
+using Catalina.Common;
 
 namespace Catalina
 {
@@ -51,7 +52,9 @@ namespace Catalina
             ProgramData.Random = new Random();
 
             ProgramData.StartTime = DateTime.UtcNow;
-            await Discord.Discord.SetupClient(services);
+            await Common.Discord.SetupClient(services);
+
+            EventScheduler.Start(services);
             await Task.Delay(-1);
         }
     }
