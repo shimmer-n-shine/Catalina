@@ -1,21 +1,22 @@
 ﻿using Catalina.Database;
-using Catalina.Discord.Commands.Preconditions;
+using Catalina.Common.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
-using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FuzzySharp;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 
-namespace Catalina.Discord.Commands.Autocomplete
+namespace Catalina.Common.Commands.Autocomplete
 {
-    public class ColourNames : AutocompleteHandler
+    public class ColourableRoles : AutocompleteHandler
     {
+
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -28,12 +29,16 @@ namespace Catalina.Discord.Commands.Autocomplete
             try
             {
                 var value = autocompleteInteraction.Data.Current.Value as string;
-                var results = new List<AutocompleteResult>();
-                var colours = CatalinaColours.ToDictionary();
 
-                results = colours.Select(r => new AutocompleteResult {
-                    Name = r.Key,
-                    Value = r.Key
+                var results = new List<AutocompleteResult>();
+
+                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+
+                var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
+
+                results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
+                    Name = context.Guild.GetRole(r).Name,
+                    Value = r.ToString()
                 }).ToList();
 
                 if (string.IsNullOrEmpty(value))
@@ -41,13 +46,15 @@ namespace Catalina.Discord.Commands.Autocomplete
 
                 var names = results.Select(r => r.Name).ToList();
 
-                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
+                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
 
                 if (searchResults.Any())
                 {
+                    var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
+
                     var matches = new List<AutocompleteResult>();
 
-                    foreach (var result in searchResults)
+                    foreach (var result in cutResults)
                     {
                         matches.Add(results.FirstOrDefault(z => z.Name == result));
                     }
@@ -68,6 +75,12 @@ namespace Catalina.Discord.Commands.Autocomplete
                 return AutocompletionResult.FromError(ex);
             }
         }
+
         protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+    }
+    public enum RoleTarget : byte
+    {
+        Colourable,
+        Renameable,
     }
 }

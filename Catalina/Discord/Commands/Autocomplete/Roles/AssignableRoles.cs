@@ -1,21 +1,22 @@
 ﻿using Catalina.Database;
-using Catalina.Discord.Commands.Preconditions;
+using Catalina.Common.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
-using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FuzzySharp;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 
-namespace Catalina.Discord.Commands.Autocomplete
+namespace Catalina.Common.Commands.Autocomplete
 {
-    public class RoleRemoval : AutocompleteHandler
+    public class AssignableRoles : AutocompleteHandler
     {
+
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
             IInteractionContext context,
             IAutocompleteInteraction autocompleteInteraction,
@@ -25,24 +26,22 @@ namespace Catalina.Discord.Commands.Autocomplete
         {
             using var database = services.GetRequiredService<DatabaseContext>();
 
-            if (!(await new RequirePrivilege(AccessLevel.Administrator).CheckRequirementsAsync(context, null, services)).IsSuccess)
-            {
-                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Insufficient Permission");
-            }
-
             try
             {
                 var value = autocompleteInteraction.Data.Current.Value as string;
 
                 var results = new List<AutocompleteResult>();
-                foreach (var r in database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles))
-                {
-                   results.Add(new AutocompleteResult
-                    {
-                        Name = context.Guild.GetRole(r.ID).Name,
-                        Value = r.ID.ToString()
-                    });
-                }
+                var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
+                if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
+                var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
+                var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+                var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
+                var preliminaryRoleResults = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+
+                results = preliminaryRoleResults.Select(r => new AutocompleteResult {
+                    Name = r.Name,
+                    Value = r.Id.ToString()
+                }).ToList();
 
                 if (string.IsNullOrEmpty(value))
                     return AutocompletionResult.FromSuccess(results.Take(25));
