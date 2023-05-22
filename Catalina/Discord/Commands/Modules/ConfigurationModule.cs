@@ -104,9 +104,12 @@ public class ConfigurationModule : InteractionModuleBase
 
             if (roleConfig.isRenamable.HasValue) DBrole.IsRenamabale = roleConfig.isRenamable.Value;
             if (roleConfig.isColourable.HasValue) DBrole.IsColourable = roleConfig.isColourable.Value;
+            
             if (roleConfig.timezone is not null)
             {
-               DBrole.Timezone = TzdbDateTimeZoneSource.Default.ZoneLocations.Any(t => t.ZoneId == roleConfig.timezone) ? roleConfig.timezone : null;
+                DBrole.Timezone = TzdbDateTimeZoneSource.Default.ZoneLocations.Any(t => t.ZoneId == roleConfig.timezone) ? roleConfig.timezone : null;
+                Database.SaveChanges();
+                Timezones.AddRole(DBrole, role);
             }
 
             //process if automatic
