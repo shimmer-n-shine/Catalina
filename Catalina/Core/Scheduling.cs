@@ -9,93 +9,96 @@ using Catalina.Common;
 
 namespace Catalina.Core;
 
-    public struct Event
-    {
-        public TimeSpan Interval;
-        public DateTime LastExecuted;
-        public Action Action;
+public struct Event
+{
+    public TimeSpan Interval;
+    public DateTime LastExecuted;
+    public Action Action;
 
-        public Event(TimeSpan delay, TimeSpan interval, Action action)
-        {
-            Interval = interval; Action = action;
-            LastExecuted = DateTime.UtcNow + delay;
-        }
-        public Event(TimeSpan interval, Action action)
-        {
-            Interval = interval; Action = action;
-            LastExecuted = DateTime.UtcNow + TimeSpan.FromMinutes(5);
-        }
+    public Event(TimeSpan delay, TimeSpan interval, Action action)
+    {
+        Interval = interval; Action = action;
+        LastExecuted = DateTime.UtcNow + delay;
     }
-    public static class EventScheduler
+    public Event(TimeSpan interval, Action action)
     {
-        private static List<Event> _events = new List<Event>();
+        Interval = interval; Action = action;
+        LastExecuted = DateTime.UtcNow + TimeSpan.FromMinutes(5);
+    }
+}
+public static class EventScheduler
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    private static List<Event> _events = new List<Event>();
+#pragma warning restore IDE0044 // Add readonly modifier
 
-        public static void Start(ServiceProvider services)
+    public static void Start(ServiceProvider services)
+    {
+        var methods = Assembly.GetExecutingAssembly().DefinedTypes
+            .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
+            .Where(m => m.GetCustomAttribute<ScheduledInvoke>() is not null);
+
+        foreach (var method in methods)
         {
-            var methods = Assembly.GetExecutingAssembly().DefinedTypes
-                .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
-                .Where(m => m.GetCustomAttribute<ScheduledInvoke>() is not null);
+            AddEvent( new Event(
+                action: method.CreateDelegate<Action>(), 
+                interval: method.GetCustomAttribute<ScheduledInvoke>().Interval,
+                delay: method.GetCustomAttribute<ScheduledInvoke>().Delay));
+        }
 
-            foreach (var method in methods)
+        new Thread(() =>
+        {
+            while (true)
             {
-                AddEvent( new Event(
-                    action: method.CreateDelegate<Action>(), 
-                    interval: method.GetCustomAttribute<ScheduledInvoke>().Interval,
-                    delay: method.GetCustomAttribute<ScheduledInvoke>().Delay));
+                Tick(services);
+                Thread.Sleep(_events.Min(e => e.Interval));
             }
+        }).Start();
+    }
 
-            new Thread(() =>
+    public static void AddEvent(Event @event) 
+    {
+        if (!_events.Any(e => e.Action == @event.Action))
+        {
+            _events.Add(@event);
+        }
+        else throw new Exceptions.DuplicateEntryException("the action provided is already scheduled.");
+    }
+
+    public static void RemoveEvent(Event @event)
+    {
+        if (_events.Any(e => e.Action == @event.Action))
+        {
+            _events.Remove(_events.First(e => e.Action == @event.Action));
+        }
+        else throw new Exceptions.InvalidArgumentException("the action provided does not exist.");
+    }
+
+    private static void Tick(ServiceProvider services)
+    {
+        _events.ForEach(e =>
+        {
+            if (DateTime.UtcNow - e.LastExecuted > e.Interval)
             {
-                while (true)
+                try
                 {
-                    Tick(services);
-                    Thread.Sleep(_events.Min(e => e.Interval));
+                    e.Action.BeginInvoke(null, null);
                 }
-            });
-        }
-
-        public static void AddEvent(Event @event) 
-        {
-            if (!_events.Any(e => e.Action == @event.Action))
-            {
-                _events.Add(@event);
-            }
-            else throw new Exceptions.DuplicateEntryException("the action provided is already scheduled.");
-        }
-
-        public static void RemoveEvent(Event @event)
-        {
-            if (_events.Any(e => e.Action == @event.Action))
-            {
-                _events.Remove(_events.First(e => e.Action == @event.Action));
-            }
-            else throw new Exceptions.InvalidArgumentException("the action provided does not exist.");
-        }
-
-        private static void Tick(ServiceProvider services)
-        {
-            _events.ForEach(e =>
-            {
-                if (DateTime.UtcNow - e.LastExecuted > e.Interval)
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        e.Action.BeginInvoke(null, null);
-                    }
-                    catch (Exception ex)
-                    {
-                        services.GetRequiredService<Logger>().Error(ex, ex.Message);
-                    }
-                    finally
-                    {
-                        e.LastExecuted = DateTime.UtcNow;
-                    }
+                    services.GetRequiredService<Logger>().Error(ex, ex.Message);
                 }
-            });
-        }
+                finally
+                {
+                    e.LastExecuted = DateTime.UtcNow;
+                }
+            }
+        });
+    }
 
-    }
-    public class ScheduledInvoke : Attribute
-    {
-        public TimeSpan Interval, Delay;
-    }
+}
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class ScheduledInvoke : Attribute
+{
+    public TimeSpan Interval, Delay;
+}
