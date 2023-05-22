@@ -6,24 +6,30 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 using Catalina.Common;
+using Catalina.Extensions;
 
 namespace Catalina.Core;
 
 public struct Event
 {
     public TimeSpan Interval;
-    public DateTime LastExecuted;
+    public DateTime NextExecution;
     public Action Action;
 
     public Event(TimeSpan delay, TimeSpan interval, Action action)
     {
         Interval = interval; Action = action;
-        LastExecuted = DateTime.UtcNow + delay;
+        NextExecution = (DateTime.UtcNow + interval + delay);
+    }
+    public Event(DateTime executionTime, TimeSpan interval, Action action)
+    {
+        Interval = interval; Action = action;
+        NextExecution = executionTime;
     }
     public Event(TimeSpan interval, Action action)
     {
         Interval = interval; Action = action;
-        LastExecuted = DateTime.UtcNow + TimeSpan.FromMinutes(5);
+        NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5) + interval;
     }
 }
 public static class EventScheduler
@@ -40,15 +46,33 @@ public static class EventScheduler
 
         foreach (var method in methods)
         {
-            AddEvent( new Event(
-                action: method.CreateDelegate<Action>(), 
-                interval: method.GetCustomAttribute<ScheduledInvoke>().Interval,
-                delay: method.GetCustomAttribute<ScheduledInvoke>().Delay));
+            var scheduledInvoke = method.GetCustomAttribute<ScheduledInvoke>();
+            if (scheduledInvoke.HourAlign)
+            {
+                var nextHour = DateTime.UtcNow.RoundUp(TimeSpan.FromHours(1));
+                AddEvent(new Event(
+                    action: method.CreateDelegate<Action>(),
+                    interval: scheduledInvoke.Interval,
+                    executionTime: nextHour
+
+                    ));
+            }
+            else
+            {
+                AddEvent(new Event(
+                    action: method.CreateDelegate<Action>(),
+                    interval: scheduledInvoke.Interval,
+                    delay: scheduledInvoke.Delay
+                    ));
+            }
         }
 
         new Thread(() =>
         {
-            while (true)
+            var utcNow = DateTime.UtcNow;
+            var nearestMinute = DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1));
+            Thread.Sleep(nearestMinute - utcNow);
+            Tick(services);
             {
                 Tick(services);
                 Thread.Sleep(_events.Min(e => e.Interval));
@@ -78,7 +102,7 @@ public static class EventScheduler
     {
         _events.ForEach(e =>
         {
-            if (DateTime.UtcNow - e.LastExecuted > e.Interval)
+            if (DateTime.UtcNow >= e.NextExecution)
             {
                 try
                 {
@@ -90,7 +114,7 @@ public static class EventScheduler
                 }
                 finally
                 {
-                    e.LastExecuted = DateTime.UtcNow;
+                    e.NextExecution = DateTime.UtcNow + e.Interval;
                 }
             }
         });
@@ -100,5 +124,20 @@ public static class EventScheduler
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class ScheduledInvoke : Attribute
 {
-    public TimeSpan Interval, Delay;
+    public ScheduledInvoke(int interval, int delay)
+    {
+        Interval = TimeSpan.FromSeconds(interval);
+        Delay = TimeSpan.FromSeconds(delay);
+        HourAlign = false;
+    }
+    public ScheduledInvoke(int interval, bool hourAlign)
+    {
+        Interval = TimeSpan.FromSeconds(interval);
+        Delay = TimeSpan.FromMinutes(5);
+        HourAlign = hourAlign;
+    }
+
+    public bool HourAlign;
+    public TimeSpan Interval;
+    public TimeSpan Delay;
 }
