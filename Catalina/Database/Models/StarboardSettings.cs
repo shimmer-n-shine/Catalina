@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace Catalina.Database.Models;
-public class Starboard
+public class StarboardSettings
 {
-    public Starboard()
+    public StarboardSettings()
     {
         Messages = new HashSet<Message>();
 
