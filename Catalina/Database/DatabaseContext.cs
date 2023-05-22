@@ -24,13 +24,14 @@ public class DatabaseContext : DbContext
         modelBuilder.Entity<Guild>().HasMany(g => g.Responses);
         modelBuilder.Entity<Guild>().HasMany(g => g.Roles);
         modelBuilder.Entity<Guild>().HasOne(g => g.Timezones);
-
         modelBuilder.Entity<Guild>().HasOne(g => g.Starboard);
 
         modelBuilder.Entity<StarboardSettings>().HasMany(s => s.Messages);
         modelBuilder.Entity<StarboardSettings>().HasOne(s => s.Emoji);
 
         modelBuilder.Entity<Message>().HasMany(m => m.Votes);
+
+        modelBuilder.Entity<Role>().HasOne(g => g.Guild);
 
     }
 }

@@ -12,4 +12,5 @@ public class Role
     public bool IsColourable { get; set; }
     public bool IsRenamabale { get; set; }
     public string Timezone { get; set; }
+    public virtual Guild Guild { get; set; }
 }
