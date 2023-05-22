@@ -42,21 +42,20 @@ public class Discord
     public static async Task SetupClient(ServiceProvider services)
     {
         _services = services;
-        Events.Services = services;
+        Events.Events.Services = services;
         Starboard.Services = services;
         InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
         await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
         
 
-        DiscordClient.UserJoined += Events.GuildMemberAdded;
-        DiscordClient.MessageDeleted += Events.MessageDeleted;
-        DiscordClient.InteractionCreated += Events.InteractionCreated;
-        DiscordClient.ReactionAdded += Events.ReactionAdded;
-        DiscordClient.Ready += Events.Ready;
+        DiscordClient.UserJoined += Events.Events.GuildMemberAdded;
+        DiscordClient.InteractionCreated += Events.Events.InteractionCreated;
+        DiscordClient.ReactionAdded += Events.Events.ReactionAdded;
+        DiscordClient.Ready += Events.Events.Ready;
 
 
-        DiscordClient.Log += Events.DiscordLog;
+        DiscordClient.Log += Events.Events.DiscordLog;
 
         await DiscordClient.LoginAsync(TokenType.Bot, _services.GetRequiredService<Configuration>().Core.DiscordToken);
 
