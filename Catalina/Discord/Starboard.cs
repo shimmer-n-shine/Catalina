@@ -6,14 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
-using static Catalina.Database.Models.Starboard;
 using Microsoft.Extensions.DependencyInjection;
+using Catalina.Common;
 
 namespace Catalina.Discord;
 public static class Starboard
 {
     public static ServiceProvider Services;
-    public static async Task ProcessVote(GuildProperty guildProperty, IMessage dMessage, IUser user)
+    public static async Task ProcessVote(Guild guildProperty, IMessage dMessage, IUser user)
     {
         using var database = Services.GetRequiredService<DatabaseContext>();
         //modify incoming guildProperty to include starboard messages, better to do it here than upstream :)
@@ -84,7 +84,7 @@ public static class Starboard
         }
     }
 
-    public static async Task<IMessage> PostStarboardMessage(GuildProperty guildProperty, IMessage message, uint votes)
+    public static async Task<IMessage> PostStarboardMessage(Guild guildProperty, IMessage message, uint votes)
     {
         using var database = Services.GetRequiredService<DatabaseContext>();
         var guild = (message.Channel as IGuildChannel).Guild;
@@ -110,7 +110,7 @@ public static class Starboard
         return finalMessage;
     }
 
-    public static async Task<IMessage> UpdateStarboardMessage(GuildProperty guildProperty, Database.Models.Message message, uint votes)
+    public static async Task<IMessage> UpdateStarboardMessage(Guild guildProperty, Database.Models.Message message, uint votes)
     {
         using var database = Services.GetRequiredService<DatabaseContext>();
         //guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty);
@@ -142,7 +142,7 @@ public static class Starboard
 
         public IUser User;
         public IMessage Message;
-        public GuildProperty GuildProperty;
+        public Guild GuildProperty;
         public uint Votes;
 
         public static implicit operator EmbedBuilder(StarboardMessage message) => new EmbedBuilder

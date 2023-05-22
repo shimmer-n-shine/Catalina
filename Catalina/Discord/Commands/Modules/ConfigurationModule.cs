@@ -1,20 +1,19 @@
-﻿using Catalina.Database;
-using Catalina.Common.Commands.Autocomplete;
-using Catalina.Common.Commands.Preconditions;
+﻿using Catalina.Common;
+using Catalina.Database;
+using Catalina.Discord.Commands.Autocomplete;
+using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using NodaTime.TimeZones;
-using Serilog;
 using Serilog.Core;
-using Skuld.Discord.InteractionHelpers.AutoCompleters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Catalina.Common.Commands.Modules
-{
+namespace Catalina.Discord.Commands.Modules;
+
     [RequirePrivilege(AccessLevel.Administrator)]
     [Group("config", "Guild configurations")]
     public class ConfigurationModule : InteractionModuleBase
@@ -267,4 +266,3 @@ namespace Catalina.Common.Commands.Modules
         }
 
     }
-}

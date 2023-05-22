@@ -1,16 +1,16 @@
-﻿using Catalina.Database;
+﻿using Catalina.Common;
+using Catalina.Database;
 using Catalina.Discord.Commands.Autocomplete;
 using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Catalina.Discord.Commands.Modules
-{
+namespace Catalina.Discord.Commands.Modules;
+
     [RequirePrivilege(AccessLevel.User)]
     [Group("style", "User stylisation")]
     public class StylisationModule : InteractionModuleBase
@@ -129,4 +129,3 @@ namespace Catalina.Discord.Commands.Modules
         }
 
     }
-}

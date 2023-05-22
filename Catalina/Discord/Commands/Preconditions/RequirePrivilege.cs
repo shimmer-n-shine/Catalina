@@ -1,21 +1,10 @@
-﻿using Discord;
+﻿using Catalina.Common;
+using Discord;
 using Discord.Interactions;
 using System;
 using System.Threading.Tasks;
 
-namespace Catalina.Discord.Commands.Preconditions
-{
-    //public class RequireDev : PreconditionAttribute
-    //{
-    //    public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
-    //    {
-    //        if (context.User.Id == ulong.Parse(Environment.GetEnvironmentVariable(AppProperties.DeveloperID)))
-    //        {
-    //            return Task.FromResult(PreconditionResult.FromSuccess());
-    //        }
-    //        return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
-    //    }
-    //}
+namespace Catalina.Discord.Commands.Preconditions;
 
     public class RequirePrivilege : PreconditionAttribute
     {
@@ -70,4 +59,3 @@ namespace Catalina.Discord.Commands.Preconditions
         SuperAdministrator = 3,
         Blocked = -1
     }
-}

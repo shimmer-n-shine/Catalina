@@ -3,19 +3,15 @@ using System;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 using Catalina.Database;
-using Discord.Commands;
 using Microsoft.EntityFrameworkCore;
 using Discord.Interactions;
 using System.Linq;
-using System.Text;
-using Catalina.Database.Models;
 using Serilog.Events;
-using Serilog;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 
-namespace Catalina.Discord
-{
+namespace Catalina.Discord;
+
     public static class Events
     {
         public static ServiceProvider Services;
@@ -27,7 +23,7 @@ namespace Catalina.Discord
             var guild = (channel.Value as IGuildChannel).Guild;
             if (database.GuildProperties.Any(g => g.ID == guild.Id))
             {
-                Database.Models.GuildProperty guildProperty = null;
+            Database.Models.Guild guildProperty = null;
                 try
                 {
                     //guildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g.ID == guild.Id);
@@ -137,7 +133,7 @@ namespace Catalina.Discord
 
             if (database.GuildProperties.Find(context.Guild.Id) == null)
             {
-                var guildProperty = new Database.Models.GuildProperty { ID = context.Guild.Id, Starboard = new Database.Models.Starboard { } };
+            var guildProperty = new Database.Models.Guild { ID = context.Guild.Id, Starboard = new Database.Models.StarboardSettings { } };
                 database.GuildProperties.Add(guildProperty);
 
                 await database.SaveChangesAsync();
@@ -149,4 +145,3 @@ namespace Catalina.Discord
             }
         }
     }
-}

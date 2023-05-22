@@ -4,24 +4,23 @@ using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Configuration;
 using System;
 
-namespace Catalina.Database
-{
-    public class DatabaseContextFactory : IDesignTimeDbContextFactory<DatabaseContext>
-    {
-        public DatabaseContext CreateDbContext(string[] args = null)
-        {
-            var config = new ConfigurationBuilder().AddIniFile("config.ini").Build().Get<Core.Configuration>();
+namespace Catalina.Database;
 
-            var ConnStr = config.Core.ConnectionString;
-            var serverVersion = ServerVersion.AutoDetect(ConnStr);
-            var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
-            optionsBuilder
-                .UseLazyLoadingProxies(true)
-                .UseMySql(ConnStr, serverVersion, x =>
-                {
-                    x.EnableRetryOnFailure();
-                });
-            return new DatabaseContext(optionsBuilder.Options);
-        }
+public class DatabaseContextFactory : IDesignTimeDbContextFactory<DatabaseContext>
+{
+    public DatabaseContext CreateDbContext(string[] args = null)
+    {
+        var config = new ConfigurationBuilder().AddIniFile("config.ini").Build().Get<Core.Configuration>();
+
+        var ConnStr = config.Core.ConnectionString;
+        var serverVersion = ServerVersion.AutoDetect(ConnStr);
+        var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
+        optionsBuilder
+            .UseLazyLoadingProxies(true)
+            .UseMySql(ConnStr, serverVersion, x =>
+            {
+                x.EnableRetryOnFailure();
+            });
+        return new DatabaseContext(optionsBuilder.Options);
     }
 }

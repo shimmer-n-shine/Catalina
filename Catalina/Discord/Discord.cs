@@ -10,8 +10,8 @@ using Catalina.Discord.Commands.TypeConverters;
 using Catalina.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Catalina.Discord
-{
+namespace Catalina.Discord;
+
     public class Discord
     {
         public static readonly DiscordSocketClient DiscordClient;
@@ -68,4 +68,3 @@ namespace Catalina.Discord
             await DiscordClient.StartAsync();
         }
     }
-}

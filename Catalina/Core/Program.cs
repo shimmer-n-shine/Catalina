@@ -1,17 +1,14 @@
 ﻿using Serilog;
 using System;
 using System.Threading.Tasks;
-using Serilog.Events;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Catalina.Database;
 using Microsoft.EntityFrameworkCore;
-using Serilog.Extensions.Logging;
-using Microsoft.Extensions.Logging;
-using Catalina.Common;
+using Catalina.Core;
 
-namespace Catalina
-{
+namespace Catalina;
+
     class Program
     {
         public static ServiceProvider Services;
@@ -52,7 +49,7 @@ namespace Catalina
             ProgramData.Random = new Random();
 
             ProgramData.StartTime = DateTime.UtcNow;
-            await Common.Discord.SetupClient(services);
+        await Discord.Discord.SetupClient(services);
 
             EventScheduler.Start(services);
             await Task.Delay(-1);
@@ -64,4 +61,3 @@ namespace Catalina
         public static DateTime StartTime;
         public static Random Random;
     }
-}

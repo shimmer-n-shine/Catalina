@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Catalina.Migrations
+namespace Catalina.Migrations;
 {
     /// <inheritdoc />
     public partial class helloworld : Migration
@@ -213,4 +213,3 @@ namespace Catalina.Migrations
                 name: "Emojis");
         }
     }
-}

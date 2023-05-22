@@ -1,73 +1,70 @@
-﻿using Catalina.Database;
-using Catalina.Common.Commands.Preconditions;
+﻿using Catalina.Common;
+using Catalina.Database;
 using Discord;
 using Discord.Interactions;
 using FuzzySharp;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Catalina.Common.Commands.Autocomplete
+namespace Catalina.Discord.Commands.Autocomplete;
+
+public class ColourNames : AutocompleteHandler
 {
-    public class ColourNames : AutocompleteHandler
+    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
+        IInteractionContext context,
+        IAutocompleteInteraction autocompleteInteraction,
+        IParameterInfo parameter,
+        IServiceProvider services
+    )
     {
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-            IInteractionContext context,
-            IAutocompleteInteraction autocompleteInteraction,
-            IParameterInfo parameter,
-            IServiceProvider services
-        )
+        using var database = services.GetRequiredService<DatabaseContext>();
+
+        try
         {
-            using var database = services.GetRequiredService<DatabaseContext>();
+            var value = autocompleteInteraction.Data.Current.Value as string;
+            var results = new List<AutocompleteResult>();
+            var colours = CatalinaColours.ToDictionary();
 
-            try
+            results = colours.Select(r => new AutocompleteResult {
+                Name = r.Key,
+                Value = r.Key
+            }).ToList();
+
+            if (string.IsNullOrEmpty(value))
+                return AutocompletionResult.FromSuccess(results.Take(25));
+
+            var names = results.Select(r => r.Name).ToList();
+
+            var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
+
+            if (searchResults.Any())
             {
-                var value = autocompleteInteraction.Data.Current.Value as string;
-                var results = new List<AutocompleteResult>();
-                var colours = CatalinaColours.ToDictionary();
+                var matches = new List<AutocompleteResult>();
 
-                results = colours.Select(r => new AutocompleteResult {
-                    Name = r.Key,
-                    Value = r.Key
-                }).ToList();
-
-                if (string.IsNullOrEmpty(value))
-                    return AutocompletionResult.FromSuccess(results.Take(25));
-
-                var names = results.Select(r => r.Name).ToList();
-
-                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0).Select(e => e.Value).ToList();
-
-                if (searchResults.Any())
+                foreach (var result in searchResults)
                 {
-                    var matches = new List<AutocompleteResult>();
-
-                    foreach (var result in searchResults)
-                    {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result));
-                    }
-
-                    var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
-
-                    return AutocompletionResult.FromSuccess(matchCollection);
+                    matches.Add(results.FirstOrDefault(z => z.Name == result));
                 }
-                else
-                {
-                    return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
-                }
+
+                var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
+
+                return AutocompletionResult.FromSuccess(matchCollection);
             }
-            catch (Exception ex)
+            else
             {
-                services.GetRequiredService<Logger>().Error(ex, ex.Message);
-
-                return AutocompletionResult.FromError(ex);
+                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
             }
         }
-        protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+        catch (Exception ex)
+        {
+            services.GetRequiredService<Logger>().Error(ex, ex.Message);
+
+            return AutocompletionResult.FromError(ex);
+        }
     }
+    protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
 }

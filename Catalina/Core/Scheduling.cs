@@ -5,9 +5,10 @@ using System.Reflection;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
+using Catalina.Common;
 
-namespace Catalina.Common
-{
+namespace Catalina.Core;
+
     public struct Event
     {
         public TimeSpan Interval;
@@ -98,4 +99,3 @@ namespace Catalina.Common
     {
         public TimeSpan Interval, Delay;
     }
-}

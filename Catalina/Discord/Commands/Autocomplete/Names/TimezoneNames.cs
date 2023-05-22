@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Catalina.Database;
-using Catalina.Common;
+using Catalina.Discord;
 using Discord;
 using Discord.Interactions;
 using FuzzySharp;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using NodaTime.TimeZones;
 using Serilog.Core;
 
-namespace Skuld.Discord.InteractionHelpers.AutoCompleters;
+namespace Catalina.Discord.Commands.Autocomplete;
 
 public class TimezoneNames : AutocompleteHandler
 {

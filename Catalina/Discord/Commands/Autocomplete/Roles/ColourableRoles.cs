@@ -1,9 +1,7 @@
 ﻿using Catalina.Database;
-using Catalina.Common.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,75 +10,74 @@ using FuzzySharp;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 
-namespace Catalina.Common.Commands.Autocomplete
+namespace Catalina.Discord.Commands.Autocomplete;
+
+public class ColourableRoles : AutocompleteHandler
 {
-    public class ColourableRoles : AutocompleteHandler
+
+    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
+        IInteractionContext context,
+        IAutocompleteInteraction autocompleteInteraction,
+        IParameterInfo parameter,
+        IServiceProvider services
+    )
     {
+        using var database = services.GetRequiredService<DatabaseContext>();
 
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-            IInteractionContext context,
-            IAutocompleteInteraction autocompleteInteraction,
-            IParameterInfo parameter,
-            IServiceProvider services
-        )
+        try
         {
-            using var database = services.GetRequiredService<DatabaseContext>();
+            var value = autocompleteInteraction.Data.Current.Value as string;
 
-            try
+            var results = new List<AutocompleteResult>();
+
+            var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
+
+            var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
+
+            results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
+                Name = context.Guild.GetRole(r).Name,
+                Value = r.ToString()
+            }).ToList();
+
+            if (string.IsNullOrEmpty(value))
+                return AutocompletionResult.FromSuccess(results.Take(25));
+
+            var names = results.Select(r => r.Name).ToList();
+
+            var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
+
+            if (searchResults.Any())
             {
-                var value = autocompleteInteraction.Data.Current.Value as string;
+                var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
 
-                var results = new List<AutocompleteResult>();
+                var matches = new List<AutocompleteResult>();
 
-                var preliminaryGuildRoleResults = database.GuildProperties.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles).Where(r => r.IsColourable).Select(r => r.ID).ToList();
-
-                var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
-
-                results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
-                    Name = context.Guild.GetRole(r).Name,
-                    Value = r.ToString()
-                }).ToList();
-
-                if (string.IsNullOrEmpty(value))
-                    return AutocompletionResult.FromSuccess(results.Take(25));
-
-                var names = results.Select(r => r.Name).ToList();
-
-                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
-
-                if (searchResults.Any())
+                foreach (var result in cutResults)
                 {
-                    var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
-
-                    var matches = new List<AutocompleteResult>();
-
-                    foreach (var result in cutResults)
-                    {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result));
-                    }
-
-                    var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
-
-                    return AutocompletionResult.FromSuccess(matchCollection);
+                    matches.Add(results.FirstOrDefault(z => z.Name == result));
                 }
-                else
-                {
-                    return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
-                }
+
+                var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
+
+                return AutocompletionResult.FromSuccess(matchCollection);
             }
-            catch (Exception ex)
+            else
             {
-                services.GetRequiredService<Logger>().Error(ex, ex.Message);
-
-                return AutocompletionResult.FromError(ex);
+                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
             }
         }
+        catch (Exception ex)
+        {
+            services.GetRequiredService<Logger>().Error(ex, ex.Message);
 
-        protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+            return AutocompletionResult.FromError(ex);
+        }
     }
-    public enum RoleTarget : byte
-    {
-        Colourable,
-        Renameable,
-    }
+
+    protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+}
+public enum RoleTarget : byte
+{
+    Colourable,
+    Renameable,
 }

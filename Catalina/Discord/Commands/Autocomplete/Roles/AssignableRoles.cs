@@ -1,9 +1,6 @@
 ﻿using Catalina.Database;
-using Catalina.Common.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,72 +9,71 @@ using FuzzySharp;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 
-namespace Catalina.Common.Commands.Autocomplete
+namespace Catalina.Discord.Commands.Autocomplete;
+
+public class AssignableRoles : AutocompleteHandler
 {
-    public class AssignableRoles : AutocompleteHandler
+
+    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
+        IInteractionContext context,
+        IAutocompleteInteraction autocompleteInteraction,
+        IParameterInfo parameter,
+        IServiceProvider services
+    )
     {
+        using var database = services.GetRequiredService<DatabaseContext>();
 
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-            IInteractionContext context,
-            IAutocompleteInteraction autocompleteInteraction,
-            IParameterInfo parameter,
-            IServiceProvider services
-        )
+        try
         {
-            using var database = services.GetRequiredService<DatabaseContext>();
+            var value = autocompleteInteraction.Data.Current.Value as string;
 
-            try
+            var results = new List<AutocompleteResult>();
+            var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
+            if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
+            var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
+            var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+            var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
+            var preliminaryRoleResults = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+
+            results = preliminaryRoleResults.Select(r => new AutocompleteResult {
+                Name = r.Name,
+                Value = r.Id.ToString()
+            }).ToList();
+
+            if (string.IsNullOrEmpty(value))
+                return AutocompletionResult.FromSuccess(results.Take(25));
+
+            var names = results.Select(r => r.Name).ToList();
+
+            var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
+
+            if (searchResults.Any())
             {
-                var value = autocompleteInteraction.Data.Current.Value as string;
+                var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
 
-                var results = new List<AutocompleteResult>();
-                var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
-                if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
-                var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
-                var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
-                var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
-                var preliminaryRoleResults = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+                var matches = new List<AutocompleteResult>();
 
-                results = preliminaryRoleResults.Select(r => new AutocompleteResult {
-                    Name = r.Name,
-                    Value = r.Id.ToString()
-                }).ToList();
-
-                if (string.IsNullOrEmpty(value))
-                    return AutocompletionResult.FromSuccess(results.Take(25));
-
-                var names = results.Select(r => r.Name).ToList();
-
-                var searchResults = Process.ExtractTop(query: value, choices: names, limit: 25, cutoff: 0);
-
-                if (searchResults.Any())
+                foreach (var result in cutResults)
                 {
-                    var cutResults = searchResults.Where(s => s.Score >= searchResults.First().Score / 2).Select(e => e.Value).ToList();
-
-                    var matches = new List<AutocompleteResult>();
-
-                    foreach (var result in cutResults)
-                    {
-                        matches.Add(results.FirstOrDefault(z => z.Name == result));
-                    }
-
-                    var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
-
-                    return AutocompletionResult.FromSuccess(matchCollection);
+                    matches.Add(results.FirstOrDefault(z => z.Name == result));
                 }
-                else
-                {
-                    return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
-                }
+
+                var matchCollection = matches.Count > 25 ? matches.Take(25) : matches;
+
+                return AutocompletionResult.FromSuccess(matchCollection);
             }
-            catch (Exception ex)
+            else
             {
-                services.GetRequiredService<Logger>().Error(ex, ex.Message);
-
-                return AutocompletionResult.FromError(ex);
+                return AutocompletionResult.FromError(InteractionCommandError.Unsuccessful, "Couldn't find any results");
             }
         }
+        catch (Exception ex)
+        {
+            services.GetRequiredService<Logger>().Error(ex, ex.Message);
 
-        protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
+            return AutocompletionResult.FromError(ex);
+        }
     }
+
+    protected override string GetLogString(IInteractionContext context) => $"Getting roles for {context.User}";
 }

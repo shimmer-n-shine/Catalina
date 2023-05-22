@@ -1,19 +1,13 @@
-﻿using Catalina.Database.Models;
+﻿using Catalina.Common;
 using Catalina.Discord.Commands.Autocomplete;
 using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
-using Humanizer;
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Text;
-using Catalina.Discord;
-using Catalina.Database;
 
-namespace Catalina.Discord.Commands
-{
+namespace Catalina.Discord.Commands;
+
     public class CoreModule : InteractionModuleBase
     {
 
@@ -25,7 +19,7 @@ namespace Catalina.Discord.Commands
             Embed embed = new Utils.WarningMessage(user: Context.User)
             {
                 Title = "Pong!",
-                Body = "Latency: " + Catalina.Discord.Discord.DiscordClient.Latency + " ms",
+            Body = "Latency: " + Discord.DiscordClient.Latency + " ms",
             };
             await RespondAsync(embed: embed);
             var message = await Context.Interaction.GetOriginalResponseAsync();
@@ -87,4 +81,3 @@ namespace Catalina.Discord.Commands
             }
         } 
     }
-}

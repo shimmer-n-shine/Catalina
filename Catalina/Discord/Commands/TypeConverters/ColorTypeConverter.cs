@@ -1,10 +1,11 @@
-﻿using Discord;
+﻿using Catalina.Common;
+using Discord;
 using Discord.Interactions;
 using System;
 using System.Threading.Tasks;
 
-namespace Catalina.Discord.Commands.TypeConverters
-{
+namespace Catalina.Discord.Commands.TypeConverters;
+
     public class ColorTypeConverter : TypeConverter
     {
         public override bool CanConvertTo(Type type) => typeof(Color).IsAssignableFrom(type);
@@ -37,4 +38,3 @@ namespace Catalina.Discord.Commands.TypeConverters
             }
         }
     }
-}
