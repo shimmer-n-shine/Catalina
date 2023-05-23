@@ -54,6 +54,7 @@ public static class EventScheduler
 
             _events.Add(repeatingEvent);
         }
+
         foreach (var @event in events)
         {
             var attribute = @event.GetCustomAttribute<Invoke>();
@@ -86,28 +87,26 @@ public static class EventScheduler
     {
         new Task(async () =>
         {
-            var utcNow = DateTime.UtcNow;
             var nearestMinute = DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1));
             services.GetRequiredService<Logger>()
             .Debug($"Scheduler sleeping until {nearestMinute.ToLocalTime():HH:mm:ss.f}");
-            await Task.Delay(nearestMinute - utcNow);
-            utcNow = DateTime.UtcNow;
+            await Task.Delay(nearestMinute - DateTime.UtcNow);
 #if DEBUG
             Tick(services);
 #endif
             while (true)
             {
+                var utcNow = DateTime.UtcNow;
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
                 var nextExecution = _events.Min(e => e.NextExecution);
                 nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1) 
                     ? nextExecution 
-                    : utcNow + TimeSpan.FromMinutes(1);
+                    : DateTime.UtcNow + TimeSpan.FromMinutes(1);
                
                 Tick(services);
                 services.GetRequiredService<Logger>()
                 .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
                 await Task.Delay(nextExecution - utcNow);
-                utcNow = DateTime.UtcNow;
             }
         }).Start();
     }
