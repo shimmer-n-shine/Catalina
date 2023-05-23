@@ -7,64 +7,63 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 using Catalina.Common;
 using Catalina.Extensions;
+using NodaTime;
 
 namespace Catalina.Core;
-
-public struct Event
-{
-    public TimeSpan Interval;
-    public DateTime NextExecution;
-    public Action Action;
-
-    public Event(TimeSpan delay, TimeSpan interval, Action action)
-    {
-        Interval = interval; Action = action;
-        NextExecution = (DateTime.UtcNow + interval + delay);
-    }
-    public Event(DateTime executionTime, TimeSpan interval, Action action)
-    {
-        Interval = interval; Action = action;
-        NextExecution = executionTime;
-    }
-    public Event(TimeSpan interval, Action action)
-    {
-        Interval = interval; Action = action;
-        NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5) + interval;
-    }
-}
 public static class EventScheduler
 {
 #pragma warning disable IDE0044 // Add readonly modifier
-    private static List<Event> _events = new List<Event>();
+    private static List<IEvent> _events = new List<IEvent>();
 #pragma warning restore IDE0044 // Add readonly modifier
 
     public static void Start(ServiceProvider services)
     {
-        var methods = Assembly.GetExecutingAssembly().DefinedTypes
+        var events = Assembly.GetExecutingAssembly().DefinedTypes
             .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
-            .Where(m => m.GetCustomAttribute<ScheduledInvoke>() is not null);
+            .Where(m => m.GetCustomAttribute<Invoke>() is not null);
 
-        foreach (var method in methods)
+        var repeatingEvents = Assembly.GetExecutingAssembly().DefinedTypes
+            .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
+            .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null);
+        
+
+
+        foreach (var @event in repeatingEvents)
         {
-            var scheduledInvoke = method.GetCustomAttribute<ScheduledInvoke>();
-            if (scheduledInvoke.HourAlign)
+            var attribute = @event.GetCustomAttribute<InvokeRepeating>();
+            var repeatingEvent = new RepeatingEvent
             {
-                var nextHour = DateTime.UtcNow.RoundUp(TimeSpan.FromHours(1));
-                AddEvent(new Event(
-                    action: method.CreateDelegate<Action>(),
-                    interval: scheduledInvoke.Interval,
-                    executionTime: nextHour
-
-                    ));
+                Action = @event.CreateDelegate<Action>(),
+                Interval = attribute.Interval,
+            };
+            if (attribute.AlignTo > AlignTo.Disabled)
+            {
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong) attribute.AlignTo));
+                repeatingEvent.NextExecution = nextExecution;
             }
             else
             {
-                AddEvent(new Event(
-                    action: method.CreateDelegate<Action>(),
-                    interval: scheduledInvoke.Interval,
-                    delay: scheduledInvoke.Delay
-                    ));
+                repeatingEvent.NextExecution = DateTime.UtcNow + attribute.Interval + attribute.Delay;
             }
+            _events.Add(repeatingEvent);
+        }
+        foreach (var @event in events)
+        {
+            var attribute = @event.GetCustomAttribute<Invoke>();
+            var scheduledEvent = new Event
+            {
+                Action = @event.CreateDelegate<Action>(),
+            };
+            if (attribute.AlignTo > AlignTo.Disabled)
+            {
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong) (attribute.AlignTo)));
+                scheduledEvent.NextExecution = nextExecution;
+            }
+            else
+            {
+                scheduledEvent.NextExecution = DateTime.UtcNow + attribute.Delay;
+            }
+            _events.Add(scheduledEvent);
         }
 
         new Thread(() =>
@@ -73,23 +72,25 @@ public static class EventScheduler
             var nearestMinute = DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1));
             Thread.Sleep(nearestMinute - utcNow);
             Tick(services);
+            while (true)
             {
                 Tick(services);
-                Thread.Sleep(_events.Min(e => e.Interval));
+                if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
+                Thread.Sleep(_events.Where(ev => ev is RepeatingEvent).Select(e => (RepeatingEvent) e).Min(e => e.Interval));
             }
         }).Start();
     }
 
-    public static void AddEvent(Event @event) 
+    public static void AddEvent(IEvent @event) 
     {
-        if (!_events.Any(e => e.Action == @event.Action))
+        if (_events.Any(e => e.Action == @event.Action))
         {
             _events.Add(@event);
         }
         else throw new Exceptions.DuplicateEntryException("the action provided is already scheduled.");
     }
 
-    public static void RemoveEvent(Event @event)
+    public static void RemoveEvent(IEvent @event)
     {
         if (_events.Any(e => e.Action == @event.Action))
         {
@@ -111,33 +112,127 @@ public static class EventScheduler
                 catch (Exception ex)
                 {
                     services.GetRequiredService<Logger>().Error(ex, ex.Message);
+                    e.NextExecution = DateTime.UtcNow + TimeSpan.FromHours(1);
                 }
                 finally
                 {
-                    e.NextExecution = DateTime.UtcNow + e.Interval;
+                    if (e is RepeatingEvent @event) e.NextExecution = DateTime.UtcNow + @event.Interval;
+                    else { RemoveEvent(e); }
                 }
             }
         });
     }
 
 }
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class ScheduledInvoke : Attribute
+
+public interface IEvent 
 {
-    public ScheduledInvoke(int interval, int delay)
+    public Action Action { get; set; }
+    public DateTime NextExecution { get; set; }
+}
+public struct RepeatingEvent : IEvent
+{
+    public TimeSpan Interval;
+    public Action Action { get; set; }
+    public DateTime NextExecution { get; set; }
+
+    public RepeatingEvent(TimeSpan delay, TimeSpan interval, Action action)
+    {
+        Interval = interval; Action = action;
+        NextExecution = (DateTime.UtcNow + interval + delay);
+    }
+    public RepeatingEvent(DateTime executionTime, TimeSpan interval, Action action)
+    {
+        Interval = interval; Action = action;
+        NextExecution = executionTime;
+    }
+    public RepeatingEvent(TimeSpan interval, Action action)
+    {
+        Interval = interval; Action = action;
+        NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5) + interval;
+    }
+}
+public struct Event : IEvent
+{
+    public DateTime NextExecution { get; set; }
+    public Action Action { get; set; }
+
+    public Event(TimeSpan delay, Action action)
+    {
+        Action = action;
+        NextExecution = (DateTime.UtcNow + delay);
+    }
+    public Event(DateTime executionTime, Action action)
+    {
+        Action = action;
+        NextExecution = executionTime;
+    }
+    public Event(Action action)
+    {
+        Action = action;
+        NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5);
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class InvokeRepeating : Attribute
+{
+    public InvokeRepeating(int interval, int delay)
     {
         Interval = TimeSpan.FromSeconds(interval);
         Delay = TimeSpan.FromSeconds(delay);
-        HourAlign = false;
+        AlignTo = 0;
     }
-    public ScheduledInvoke(int interval, bool hourAlign)
+    public InvokeRepeating(int interval, AlignTo alignTo)
     {
         Interval = TimeSpan.FromSeconds(interval);
         Delay = TimeSpan.FromMinutes(5);
-        HourAlign = hourAlign;
+        AlignTo = alignTo;
     }
 
-    public bool HourAlign;
-    public TimeSpan Interval;
+    public AlignTo AlignTo;
+    public TimeSpan Interval; 
     public TimeSpan Delay;
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public class Invoke : Attribute
+{
+    public Invoke(int delay)
+    {
+        Delay = TimeSpan.FromSeconds(delay);
+        AlignTo = 0;
+    }
+    public Invoke(AlignTo alignTo)
+    {
+        Delay = TimeSpan.FromMinutes(5);
+        AlignTo = alignTo;
+    }
+
+    public AlignTo AlignTo;
+    public TimeSpan Delay;
+}
+
+public enum AlignTo : ulong
+{
+    Disabled = 0,
+
+    OneMinute = 60,
+
+    FifteenMinutes = OneMinute * 15,
+    ThirtyMinutes = OneMinute * 30,
+
+    OneHour = OneMinute * 60,
+
+    TwoHours = OneHour * 2,
+    FourHours = OneHour * 4,
+    SixHours = OneHour * 6,
+    EightHours = OneHour * 8,
+    TenHours = OneHour * 10,
+    TwelveHours = OneHour * 12,
+
+    OneDay = OneHour * 24,
+
+    TwoDays = OneDay * 2,
+    OneWeek = OneDay * 7 
 }
