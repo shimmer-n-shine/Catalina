@@ -16,11 +16,16 @@ public static class EventScheduler
     private static List<IEvent> _events = new List<IEvent>();
 #pragma warning restore IDE0044 // Add readonly modifier
 
-    public static void Start(ServiceProvider services)
+    public static void Setup(ServiceProvider services)
     {
-        var events = Assembly.GetExecutingAssembly().DefinedTypes
-            .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
-            .Where(m => m.GetCustomAttribute<Invoke>() is not null);
+        var events = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(x => x.GetTypes())
+            .SelectMany(y => y.GetMethods())
+            .Where(m => m.GetCustomAttribute<Invoke>() is not null && m.IsPublic && m.IsStatic);
+        var repeatingEvents = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(x => x.GetTypes())
+            .SelectMany(y => y.GetMethods())
+            .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null && m.IsPublic && m.IsStatic);
 
         var repeatingEvents = Assembly.GetExecutingAssembly().DefinedTypes
             .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
