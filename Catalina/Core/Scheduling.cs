@@ -81,10 +81,6 @@ public static class EventScheduler
         }
 
         Start(services);
-
-#if DEBUG
-        Tick(services);
-#endif
     }
     private static void Start(ServiceProvider services)
     {
@@ -96,7 +92,9 @@ public static class EventScheduler
             .Debug($"Scheduler sleeping until {nearestMinute.ToLocalTime():HH:mm:ss.f}");
             await Task.Delay(nearestMinute - utcNow);
             utcNow = DateTime.UtcNow;
+#if DEBUG
             Tick(services);
+#endif
             while (true)
             {
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
