@@ -36,12 +36,12 @@ public static class EventScheduler
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
-                var nextExecution = DateTime.UtcNow.RoundToNearest(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
                 repeatingEvent.NextExecution = nextExecution;
             }
             else
             {
-                repeatingEvent.NextExecution = DateTime.UtcNow.RoundToNearest(attribute.Interval) + attribute.Delay;
+                repeatingEvent.NextExecution = DateTime.UtcNow.RoundUp(attribute.Interval) + attribute.Delay;
             }
             string fullMethodName = $"{repeatingEvent.Method.DeclaringType.Namespace}" +
                 $".{repeatingEvent.Method.DeclaringType.Name}" +
@@ -81,6 +81,10 @@ public static class EventScheduler
         }
 
         Start(services);
+
+#if DEBUG
+        Tick(services);
+#endif
     }
     private static void Start(ServiceProvider services)
     {
@@ -91,19 +95,20 @@ public static class EventScheduler
             services.GetRequiredService<Logger>()
             .Debug($"Scheduler sleeping until {nearestMinute.ToLocalTime():HH:mm:ss.f}");
             await Task.Delay(nearestMinute - utcNow);
+            utcNow = DateTime.UtcNow;
             Tick(services);
             while (true)
             {
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
                 var nextExecution = _events.Min(e => e.NextExecution);
-                await Task.Delay(
-                    (nextExecution - DateTime.UtcNow) > TimeSpan.FromSeconds(1)
-                    ? (nextExecution - DateTime.UtcNow)
-                    : TimeSpan.FromMinutes(1)
-                    );
+                nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1) 
+                    ? nextExecution 
+                    : utcNow + TimeSpan.FromMinutes(1);
+               
                 Tick(services);
                 services.GetRequiredService<Logger>()
                 .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
+                await Task.Delay(utcNow - nextExecution);
             }
         }).Start();
     }
@@ -162,8 +167,8 @@ public static class EventScheduler
                     services.GetRequiredService<Logger>().Error(ex, ex.Message);
                     @event.NextExecution =
                         (@event is RepeatingEvent re)
-                        ? utcNow.RoundToNearest(re.Interval)
-                        : utcNow.RoundToNearest(TimeSpan.FromHours(1));
+                        ? utcNow.RoundUp(re.Interval)
+                        : utcNow.RoundUp(TimeSpan.FromHours(1));
                 }
                 if (!success) continue;
 
