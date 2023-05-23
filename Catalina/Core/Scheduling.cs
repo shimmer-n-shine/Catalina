@@ -130,9 +130,9 @@ public static class EventScheduler
 
     private static void Tick(ServiceProvider services)
     {
-        for (int i = 0; i < _events.Count; i++)
+        List<IEvent> eventsToRemove = new List<IEvent>();
+        foreach (var @event in _events)
         {
-            var @event = _events[i];
             bool success = true;
             DateTime utcNow = DateTime.UtcNow;
             if (utcNow >= @event.NextExecution)
@@ -148,8 +148,8 @@ public static class EventScheduler
 
                     if (@event.Method.IsStatic)
                     {
-                    @event.Method.Invoke(null, null);
-                }
+                        @event.Method.Invoke(null, null);
+                    }
                     else
                     {
                         @event.Method.Invoke(Activator.CreateInstance(@event.Method.DeclaringType), null);
@@ -165,7 +165,7 @@ public static class EventScheduler
                         ? utcNow.RoundUp(re.Interval)
                         : utcNow.RoundUp(TimeSpan.FromHours(1));
                 }
-                if (!success) return;
+                if (!success) continue;
 
                 string fullMethodName = $"{@event.Method.DeclaringType.Namespace}" +
                     $".{@event.Method.DeclaringType.Name}" +
@@ -178,11 +178,20 @@ public static class EventScheduler
                 }
                 else
                 {
-                    RemoveEvent(@event);
+                    eventsToRemove.Add(@event);
                     services.GetRequiredService<Logger>()
-                        .Debug($"{fullMethodName} complete; removed from events list");
+                        .Debug($"{fullMethodName} completed and staged for removal");
                 }
             }
+        }
+        foreach (var @event in eventsToRemove)
+        {
+            string fullMethodName = $"{@event.Method.DeclaringType.Namespace}" +
+                    $".{@event.Method.DeclaringType.Name}" +
+                    $".{@event.Method.Name}";
+            RemoveEvent(@event);
+            services.GetRequiredService<Logger>()
+                        .Debug($"{fullMethodName} removed from events list");
         }
     }
 }       
