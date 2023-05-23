@@ -83,7 +83,7 @@ public static class EventScheduler
         Start(services);
     }
     private static void Start(ServiceProvider services)
-        {
+    {
         new Task(async () =>
         {
             var utcNow = DateTime.UtcNow;
@@ -130,26 +130,44 @@ public static class EventScheduler
 
     private static void Tick(ServiceProvider services)
     {
-        _events.ForEach(e =>
+        for (int i = 0; i < _events.Count; i++)
         {
-            if (DateTime.UtcNow >= e.NextExecution)
+            var @event = _events[i];
+            if (DateTime.UtcNow >= @event.NextExecution)
             {
                 try
                 {
-                    e.Action.BeginInvoke(null, null);
+                    services.GetRequiredService<Logger>().Debug($"Ticking {@event.Method.Name}");
+                    @event.Method.Invoke(null, null);
                 }
                 catch (Exception ex)
                 {
                     services.GetRequiredService<Logger>().Error(ex, ex.Message);
-                    e.NextExecution = DateTime.UtcNow + TimeSpan.FromHours(1);
+                    @event.NextExecution = 
+                        (@event is RepeatingEvent repeatingEvent) 
+                        ? DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1)) + repeatingEvent.Interval 
+                        : DateTime.UtcNow.RoundUp(TimeSpan.FromHours(1));
                 }
                 finally
                 {
-                    if (e is RepeatingEvent @event) e.NextExecution = DateTime.UtcNow + @event.Interval;
-                    else { RemoveEvent(e); }
+                    string fullMethodName = $"{@event.Method.DeclaringType.Namespace}" +
+                        $".{@event.Method.DeclaringType.Name}" +
+                        $".{@event.Method.Name}";
+                    if (@event is RepeatingEvent repeatingEvent)
+                    {
+                        @event.NextExecution = DateTime.UtcNow + repeatingEvent.Interval;
+                        services.GetRequiredService<Logger>()
+                            .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
+                    }
+                    else
+                    {
+                        RemoveEvent(@event);
+                        services.GetRequiredService<Logger>()
+                            .Debug($"{fullMethodName} complete; removed from events list");
+                    }
                 }
             }
-        });
+        }
     }
 
 }
