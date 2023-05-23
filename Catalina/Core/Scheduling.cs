@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 using Catalina.Common;
 using Catalina.Extensions;
-using NodaTime;
+using System.Threading.Tasks;
 
 namespace Catalina.Core;
 public static class EventScheduler
@@ -44,6 +44,15 @@ public static class EventScheduler
             {
                 repeatingEvent.NextExecution = DateTime.UtcNow + attribute.Interval + attribute.Delay;
             }
+            string fullMethodName = $"{repeatingEvent.Method.DeclaringType.Namespace}" +
+                $".{repeatingEvent.Method.DeclaringType.Name}" +
+                $".{repeatingEvent.Method.Name}";
+
+            services.GetRequiredService<Logger>(
+                ).Debug($"{fullMethodName} scheduled for " +
+                $"{repeatingEvent.NextExecution.ToLocalTime():HH:mm:ss.f}" +
+                $", repeat interval {repeatingEvent.Interval:c}");
+
             _events.Add(repeatingEvent);
         }
         foreach (var @event in events)
@@ -62,6 +71,13 @@ public static class EventScheduler
             {
                 scheduledEvent.NextExecution = DateTime.UtcNow + attribute.Delay;
             }
+            string fullMethodName = $"{scheduledEvent.Method.DeclaringType.Namespace}" +
+                $".{scheduledEvent.Method.DeclaringType.Name}" +
+                $".{scheduledEvent.Method.Name}";
+            services.GetRequiredService<Logger>(
+                ).Debug($"{fullMethodName} scheduled for " +
+                $"{scheduledEvent.NextExecution.ToLocalTime():HH:mm:ss.f}" +
+                $", not scheduled to repeat");
             _events.Add(scheduledEvent);
         }
 
@@ -86,7 +102,8 @@ public static class EventScheduler
         {
             _events.Add(@event);
         }
-        else throw new Exceptions.DuplicateEntryException("the action provided is already scheduled.");
+        else throw new Exceptions
+                .DuplicateEntryException("the action provided is already scheduled.");
     }
 
     public static void RemoveEvent(IEvent @event)
@@ -95,7 +112,8 @@ public static class EventScheduler
         {
             _events.Remove(_events.First(e => e.Method == @event.Method));
         }
-        else throw new Exceptions.InvalidArgumentException("the action provided does not exist.");
+        else throw new Exceptions
+                .InvalidArgumentException("the action provided does not exist.");
     }
 
     private static void Tick(ServiceProvider services)
