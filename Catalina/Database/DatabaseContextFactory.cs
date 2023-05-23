@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.Proxies;
 using Microsoft.Extensions.Configuration;
-using System;
 
 namespace Catalina.Database;
 

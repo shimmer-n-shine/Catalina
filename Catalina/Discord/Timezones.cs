@@ -10,6 +10,7 @@ using DiscordNET = Discord;
 using NodaTime.TimeZones;
 using NodaTime;
 using Catalina.Extensions;
+using Catalina.Core;
 
 namespace Catalina.Discord;
 public static class Timezones
@@ -44,7 +45,7 @@ public static class Timezones
     }
 
     //                    60 minutes         align with nearest hour
-    [Core.ScheduledInvoke(interval: 60 * 60, hourAlign: true)]
+    [Core.InvokeRepeating(interval: 60 * 60, alignTo: AlignTo.OneHour)]
     public static async Task Tick()
     {
         foreach (var rolePair in Roles)

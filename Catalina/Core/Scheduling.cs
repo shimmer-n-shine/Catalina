@@ -76,7 +76,7 @@ public static class EventScheduler
             {
                 Tick(services);
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
-                Thread.Sleep(_events.Where(ev => ev is RepeatingEvent).Select(e => (RepeatingEvent) e).Min(e => e.Interval));
+                Thread.Sleep(_events.Where(ev => ev is RepeatingEvent).Min(e => ((RepeatingEvent) e).Interval));
             }
         }).Start();
     }
