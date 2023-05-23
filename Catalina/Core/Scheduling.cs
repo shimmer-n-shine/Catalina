@@ -36,7 +36,7 @@ public static class EventScheduler
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
-                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
+                var nextExecution = DateTime.UtcNow.RoundToNearest(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
                 repeatingEvent.NextExecution = nextExecution;
             }
             else
@@ -162,8 +162,8 @@ public static class EventScheduler
                     services.GetRequiredService<Logger>().Error(ex, ex.Message);
                     @event.NextExecution =
                         (@event is RepeatingEvent re)
-                        ? utcNow.RoundUp(re.Interval)
-                        : utcNow.RoundUp(TimeSpan.FromHours(1));
+                        ? utcNow.RoundToNearest(re.Interval)
+                        : utcNow.RoundToNearest(TimeSpan.FromHours(1));
                 }
                 if (!success) continue;
 
@@ -172,7 +172,7 @@ public static class EventScheduler
                     $".{@event.Method.Name}";
                 if (@event is RepeatingEvent repeatingEvent)
                 {
-                    @event.NextExecution = (utcNow.RoundUp(repeatingEvent.Interval));
+                    @event.NextExecution = (utcNow.RoundToNearest(repeatingEvent.Interval));
                     services.GetRequiredService<Logger>()
                         .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
                 }
