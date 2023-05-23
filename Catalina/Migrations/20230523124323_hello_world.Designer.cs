@@ -11,10 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Catalina.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20230521193731_hello world")]
-#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
-    partial class helloworld
-#pragma warning restore CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
+    [Migration("20230523124323_hello_world")]
+    partial class hello_world
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,20 +38,25 @@ namespace Catalina.Migrations
                     b.ToTable("Emojis");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.GuildProperty", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Guild", b =>
                 {
                     b.Property<ulong>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("StarboardID")
+                    b.Property<ulong?>("StarboardSettingsID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<ulong?>("TimezoneSettingsID")
                         .HasColumnType("bigint unsigned");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("StarboardID");
+                    b.HasIndex("StarboardSettingsID");
 
-                    b.ToTable("GuildProperties");
+                    b.HasIndex("TimezoneSettingsID");
+
+                    b.ToTable("Guilds");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Message", b =>
@@ -68,15 +71,15 @@ namespace Catalina.Migrations
                     b.Property<ulong>("MessageID")
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("StarboardID")
+                    b.Property<ulong?>("StarboardMessageID")
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("StarboardMessageID")
+                    b.Property<ulong?>("StarboardSettingsID")
                         .HasColumnType("bigint unsigned");
 
                     b.HasKey("ID");
 
-                    b.HasIndex("StarboardID");
+                    b.HasIndex("StarboardSettingsID");
 
                     b.ToTable("StarboardMessages");
                 });
@@ -90,7 +93,7 @@ namespace Catalina.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("longtext");
 
-                    b.Property<ulong?>("GuildPropertyID")
+                    b.Property<ulong?>("GuildID")
                         .HasColumnType("bigint unsigned");
 
                     b.Property<string>("Name")
@@ -101,7 +104,7 @@ namespace Catalina.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("GuildPropertyID");
+                    b.HasIndex("GuildID");
 
                     b.ToTable("Responses");
                 });
@@ -111,7 +114,7 @@ namespace Catalina.Migrations
                     b.Property<ulong>("ID")
                         .HasColumnType("bigint unsigned");
 
-                    b.Property<ulong?>("GuildPropertyID")
+                    b.Property<ulong?>("GuildID")
                         .HasColumnType("bigint unsigned");
 
                     b.Property<bool>("IsAutomaticallyAdded")
@@ -123,14 +126,17 @@ namespace Catalina.Migrations
                     b.Property<bool>("IsRenamabale")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("Timezone")
+                        .HasColumnType("longtext");
+
                     b.HasKey("ID");
 
-                    b.HasIndex("GuildPropertyID");
+                    b.HasIndex("GuildID");
 
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
+            modelBuilder.Entity("Catalina.Database.Models.StarboardSettings", b =>
                 {
                     b.Property<ulong>("ID")
                         .ValueGeneratedOnAdd()
@@ -149,7 +155,20 @@ namespace Catalina.Migrations
 
                     b.HasIndex("EmojiNameOrID");
 
-                    b.ToTable("Starboards");
+                    b.ToTable("StarboardSettings");
+                });
+
+            modelBuilder.Entity("Catalina.Database.Models.TimezoneSettings", b =>
+                {
+                    b.Property<ulong>("ID")
+                        .HasColumnType("bigint unsigned");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("TimezonesSettings");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Vote", b =>
@@ -171,37 +190,45 @@ namespace Catalina.Migrations
                     b.ToTable("StarboardVotes");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.GuildProperty", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Guild", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.Starboard", "Starboard")
+                    b.HasOne("Catalina.Database.Models.StarboardSettings", "StarboardSettings")
                         .WithMany()
-                        .HasForeignKey("StarboardID");
+                        .HasForeignKey("StarboardSettingsID");
 
-                    b.Navigation("Starboard");
+                    b.HasOne("Catalina.Database.Models.TimezoneSettings", "TimezoneSettings")
+                        .WithMany()
+                        .HasForeignKey("TimezoneSettingsID");
+
+                    b.Navigation("StarboardSettings");
+
+                    b.Navigation("TimezoneSettings");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Message", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.Starboard", null)
+                    b.HasOne("Catalina.Database.Models.StarboardSettings", null)
                         .WithMany("Messages")
-                        .HasForeignKey("StarboardID");
+                        .HasForeignKey("StarboardSettingsID");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Response", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.GuildProperty", null)
+                    b.HasOne("Catalina.Database.Models.Guild", null)
                         .WithMany("Responses")
-                        .HasForeignKey("GuildPropertyID");
+                        .HasForeignKey("GuildID");
                 });
 
             modelBuilder.Entity("Catalina.Database.Models.Role", b =>
                 {
-                    b.HasOne("Catalina.Database.Models.GuildProperty", null)
+                    b.HasOne("Catalina.Database.Models.Guild", "Guild")
                         .WithMany("Roles")
-                        .HasForeignKey("GuildPropertyID");
+                        .HasForeignKey("GuildID");
+
+                    b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
+            modelBuilder.Entity("Catalina.Database.Models.StarboardSettings", b =>
                 {
                     b.HasOne("Catalina.Database.Models.Emoji", "Emoji")
                         .WithMany()
@@ -217,7 +244,7 @@ namespace Catalina.Migrations
                         .HasForeignKey("MessageID");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.GuildProperty", b =>
+            modelBuilder.Entity("Catalina.Database.Models.Guild", b =>
                 {
                     b.Navigation("Responses");
 
@@ -229,7 +256,7 @@ namespace Catalina.Migrations
                     b.Navigation("Votes");
                 });
 
-            modelBuilder.Entity("Catalina.Database.Models.Starboard", b =>
+            modelBuilder.Entity("Catalina.Database.Models.StarboardSettings", b =>
                 {
                     b.Navigation("Messages");
                 });

@@ -21,32 +21,30 @@ public static class Timezones
     {
         using var database = services.GetRequiredService<DatabaseContext>();
 
-        var dbRoles = database.Roles.Where(r => !string.IsNullOrEmpty(r.Timezone)).ToList();
-        var dbGuilds = new List<Guild>();
+        var dbRoles = database.Roles.Where(r => !string.IsNullOrEmpty(r.Timezone));
 
-        dbRoles.ForEach(r =>
+        var dbGuilds = dbRoles.GroupBy(r => r.Guild);
+        
+        foreach (var guildGroup in dbGuilds)
         {
-            if (!dbGuilds.Contains(r.Guild)) dbGuilds.Add(r.Guild);
-        });
+            if (!guildGroup.Key.TimezoneSettings.Enabled) continue;
 
-        dbGuilds.ForEach(dbGuild =>
-        {
-            var guild = client.GetGuild(dbGuild.ID);
-            dbGuild.Roles.Where(g => string.IsNullOrEmpty(g.Timezone) && !Roles.ContainsKey(g)).ToList().ForEach(r =>
+            var guild = client.GetGuild(guildGroup.Key.ID);
+            var roles = guildGroup.ToList();
+
+            foreach (var role in roles)
             {
-                Roles.Add(r, guild.GetRole(r.ID));
-            });
-        });
-
+                Roles.Add(role, guild.GetRole(role.ID));
+            }
+        }
     }
     public static void AddRole(Role dbRole, IRole role)
     {
         Roles.Add(dbRole, role);
     }
 
-    //                    60 minutes         align with nearest hour
-    [Core.InvokeRepeating(interval: 60 * 60, alignTo: AlignTo.OneHour)]
-    public static async Task Tick()
+    [InvokeRepeating(interval: Timings.FifteenMinutes, alignTo: AlignTo.OneHour)]
+    public static async Task UpdateTimes()
     {
         foreach (var rolePair in Roles)
         {
@@ -57,12 +55,13 @@ public static class Timezones
                 .GetZoneOrNull(rolePair.Key.Timezone));
             var shortcode = TzdbDateTimeZoneSource.Default
                 .ForId(timezone.ZoneId)
-                .GetZoneInterval(instant);
+                .GetZoneInterval(instant)
+                .Name.Replace("+", "UTC+");
 
             var localTime = zonedTime
                 .ToDateTimeUnspecified()
                 .RoundToNearest(TimeSpan.FromMinutes(15));
-            await rolePair.Value.ModifyAsync(r => r.Name = $"[{shortcode.Name}] {localTime:'HH:mm'}");
+            await rolePair.Value.ModifyAsync(r => r.Name = $"{localTime:HH:mm} [{shortcode}]");
         }
     }
 
