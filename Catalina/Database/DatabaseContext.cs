@@ -14,17 +14,17 @@ public class DatabaseContext : DbContext
     public DbSet<Response> Responses { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<Message> StarboardMessages { get; set; }
-    public DbSet<StarboardSettings> Starboards { get; set; }
+    public DbSet<StarboardSettings> StarboardSettings { get; set; }
     public DbSet<Emoji> Emojis { get; set; }
     public DbSet<Vote> StarboardVotes { get; set; }
-    public DbSet<TimezoneSettings> Timezones { get; set; }
+    public DbSet<TimezoneSettings> TimezonesSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Guild>().HasMany(g => g.Responses);
         modelBuilder.Entity<Guild>().HasMany(g => g.Roles);
-        modelBuilder.Entity<Guild>().HasOne(g => g.Timezones);
-        modelBuilder.Entity<Guild>().HasOne(g => g.Starboard);
+        modelBuilder.Entity<Guild>().HasOne(g => g.TimezoneSettings);
+        modelBuilder.Entity<Guild>().HasOne(g => g.StarboardSettings);
 
         modelBuilder.Entity<StarboardSettings>().HasMany(s => s.Messages);
         modelBuilder.Entity<StarboardSettings>().HasOne(s => s.Emoji);

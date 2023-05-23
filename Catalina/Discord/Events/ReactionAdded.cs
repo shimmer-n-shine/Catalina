@@ -30,7 +30,7 @@ public static partial class Events
 
             var emoji = await Database.Models.Emoji.ParseAsync(reaction.Emote, guild);
 
-            if (emoji.NameOrID == guildProperty.Starboard.Emoji.NameOrID)
+            if (emoji.NameOrID == guildProperty.StarboardSettings.Emoji.NameOrID)
             {
                 await Starboard.ProcessVote(guildProperty, await message.GetOrDownloadAsync(), reaction.User.Value);
             }

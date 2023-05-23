@@ -14,12 +14,12 @@ public static partial class Events
 
         if (database.Guilds.Find(context.Guild.Id) == null)
         {
-            var guildProperty = new Database.Models.Guild { ID = context.Guild.Id, Starboard = new Database.Models.StarboardSettings { } };
+            var guildProperty = new Database.Models.Guild { ID = context.Guild.Id, StarboardSettings = new Database.Models.StarboardSettings { } };
             database.Guilds.Add(guildProperty);
 
             await database.SaveChangesAsync();
 
-            guildProperty.Starboard.SetOrCreateEmoji(database.Emojis.AsNoTracking().FirstOrDefault(e => e.NameOrID == ":star:"), database);
+            guildProperty.StarboardSettings.SetOrCreateEmoji(database.Emojis.AsNoTracking().FirstOrDefault(e => e.NameOrID == ":star:"), database);
 
             await database.SaveChangesAsync();
 

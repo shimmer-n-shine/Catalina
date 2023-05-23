@@ -29,7 +29,7 @@ public class ConfigurationModule : InteractionModuleBase
         {
             var guildProperty = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
-            guildProperty.Starboard.ChannelID = channel?.Id;
+            guildProperty.StarboardSettings.ChannelID = channel?.Id;
 
             await Database.SaveChangesAsync();
             await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
@@ -52,7 +52,7 @@ public class ConfigurationModule : InteractionModuleBase
                 return;
             }
 
-            guildProperties.Starboard.SetOrCreateEmoji(catalinaEmoji, Database);
+            guildProperties.StarboardSettings.SetOrCreateEmoji(catalinaEmoji, Database);
 
             await Database.SaveChangesAsync();
 
@@ -69,7 +69,7 @@ public class ConfigurationModule : InteractionModuleBase
             }
             var guildProperties = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
-            guildProperties.Starboard.Threshhold = threshhold;
+            guildProperties.StarboardSettings.Threshhold = threshhold;
 
             await Database.SaveChangesAsync();
             await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
@@ -260,7 +260,7 @@ public class ConfigurationModule : InteractionModuleBase
         {
             var guildProperty = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
 
-            guildProperty.Timezones.Enabled = enabled;
+            guildProperty.TimezoneSettings.Enabled = enabled;
 
             await Database.SaveChangesAsync();
             await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
