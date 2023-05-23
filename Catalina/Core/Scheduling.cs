@@ -27,18 +27,12 @@ public static class EventScheduler
             .SelectMany(y => y.GetMethods())
             .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null && m.IsPublic && m.IsStatic);
 
-        var repeatingEvents = Assembly.GetExecutingAssembly().DefinedTypes
-            .SelectMany(cl => cl.GetMethods(BindingFlags.Public | (BindingFlags.Public & BindingFlags.Static)))
-            .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null);
-        
-
-
         foreach (var @event in repeatingEvents)
         {
             var attribute = @event.GetCustomAttribute<InvokeRepeating>();
             var repeatingEvent = new RepeatingEvent
             {
-                Action = @event.CreateDelegate<Action>(),
+                Method = @event,
                 Interval = attribute.Interval,
             };
             if (attribute.AlignTo > AlignTo.Disabled)
@@ -57,7 +51,7 @@ public static class EventScheduler
             var attribute = @event.GetCustomAttribute<Invoke>();
             var scheduledEvent = new Event
             {
-                Action = @event.CreateDelegate<Action>(),
+                Method = @event,
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
@@ -88,7 +82,7 @@ public static class EventScheduler
 
     public static void AddEvent(IEvent @event) 
     {
-        if (_events.Any(e => e.Action == @event.Action))
+        if (_events.Any(e => e.Method == @event.Method))
         {
             _events.Add(@event);
         }
@@ -97,9 +91,9 @@ public static class EventScheduler
 
     public static void RemoveEvent(IEvent @event)
     {
-        if (_events.Any(e => e.Action == @event.Action))
+        if (_events.Any(e => e.Method == @event.Method))
         {
-            _events.Remove(_events.First(e => e.Action == @event.Action));
+            _events.Remove(_events.First(e => e.Method == @event.Method));
         }
         else throw new Exceptions.InvalidArgumentException("the action provided does not exist.");
     }
@@ -132,49 +126,49 @@ public static class EventScheduler
 
 public interface IEvent 
 {
-    public Action Action { get; set; }
+    public MethodInfo Method { get; set; }
     public DateTime NextExecution { get; set; }
 }
 public struct RepeatingEvent : IEvent
 {
     public TimeSpan Interval;
-    public Action Action { get; set; }
+    public MethodInfo Method { get; set; }
     public DateTime NextExecution { get; set; }
 
-    public RepeatingEvent(TimeSpan delay, TimeSpan interval, Action action)
+    public RepeatingEvent(TimeSpan delay, TimeSpan interval, MethodInfo method)
     {
-        Interval = interval; Action = action;
+        Interval = interval; Method = method;
         NextExecution = (DateTime.UtcNow + interval + delay);
     }
-    public RepeatingEvent(DateTime executionTime, TimeSpan interval, Action action)
+    public RepeatingEvent(DateTime executionTime, TimeSpan interval, MethodInfo method)
     {
-        Interval = interval; Action = action;
+        Interval = interval; Method = method;
         NextExecution = executionTime;
     }
-    public RepeatingEvent(TimeSpan interval, Action action)
+    public RepeatingEvent(TimeSpan interval, MethodInfo method)
     {
-        Interval = interval; Action = action;
+        Interval = interval; Method = method;
         NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5) + interval;
     }
 }
 public struct Event : IEvent
 {
     public DateTime NextExecution { get; set; }
-    public Action Action { get; set; }
+    public MethodInfo Method { get; set; }
 
-    public Event(TimeSpan delay, Action action)
+    public Event(TimeSpan delay, MethodInfo method)
     {
-        Action = action;
+        Method = method;
         NextExecution = (DateTime.UtcNow + delay);
     }
-    public Event(DateTime executionTime, Action action)
+    public Event(DateTime executionTime, MethodInfo method)
     {
-        Action = action;
+        Method = method;
         NextExecution = executionTime;
     }
-    public Event(Action action)
+    public Event(MethodInfo method)
     {
-        Action = action;
+        Method = method;
         NextExecution = DateTime.UtcNow + TimeSpan.FromMinutes(5);
     }
 }
@@ -182,15 +176,15 @@ public struct Event : IEvent
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class InvokeRepeating : Attribute
 {
-    public InvokeRepeating(int interval, int delay)
+    public InvokeRepeating(Timings interval, Timings delay)
     {
-        Interval = TimeSpan.FromSeconds(interval);
-        Delay = TimeSpan.FromSeconds(delay);
+        Interval = TimeSpan.FromSeconds((double) interval);
+        Delay = TimeSpan.FromSeconds((double) delay);
         AlignTo = 0;
     }
-    public InvokeRepeating(int interval, AlignTo alignTo)
+    public InvokeRepeating(Timings interval, AlignTo alignTo)
     {
-        Interval = TimeSpan.FromSeconds(interval);
+        Interval = TimeSpan.FromSeconds((double) interval);
         Delay = TimeSpan.FromMinutes(5);
         AlignTo = alignTo;
     }
@@ -203,9 +197,9 @@ public class InvokeRepeating : Attribute
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class Invoke : Attribute
 {
-    public Invoke(int delay)
+    public Invoke(Timings delay)
     {
-        Delay = TimeSpan.FromSeconds(delay);
+        Delay = TimeSpan.FromSeconds((double) delay);
         AlignTo = 0;
     }
     public Invoke(AlignTo alignTo)
@@ -218,12 +212,12 @@ public class Invoke : Attribute
     public TimeSpan Delay;
 }
 
-public enum AlignTo : ulong
+public enum Timings : ulong
 {
-    Disabled = 0,
-
     OneMinute = 60,
 
+    FiveMinutes = OneMinute * 5,
+    TenMinutes = OneMinute * 10,
     FifteenMinutes = OneMinute * 15,
     ThirtyMinutes = OneMinute * 30,
 
@@ -239,5 +233,35 @@ public enum AlignTo : ulong
     OneDay = OneHour * 24,
 
     TwoDays = OneDay * 2,
-    OneWeek = OneDay * 7 
+    OneWeek = OneDay * 7,
+
+    TwoWeeks = OneWeek * 2
+}
+
+public enum AlignTo : ulong
+{
+    Disabled = 0,
+
+    OneMinute = 60,
+
+    FiveMinutes = OneMinute * 5,
+    TenMinutes = OneMinute * 10,
+    FifteenMinutes = OneMinute * 15,
+    ThirtyMinutes = OneMinute * 30,
+
+    OneHour = OneMinute * 60,
+
+    TwoHours = OneHour * 2,
+    FourHours = OneHour * 4,
+    SixHours = OneHour * 6,
+    EightHours = OneHour * 8,
+    TenHours = OneHour * 10,
+    TwelveHours = OneHour * 12,
+
+    OneDay = OneHour * 24,
+
+    TwoDays = OneDay * 2,
+    OneWeek = OneDay * 7,
+
+    TwoWeeks = OneWeek * 2
 }
