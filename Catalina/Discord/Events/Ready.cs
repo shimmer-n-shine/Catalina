@@ -11,5 +11,7 @@ public static partial class Events
         await Discord.InteractionService.RegisterCommandsGloballyAsync();
         await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
         Services.GetRequiredService<Logger>().Information("Discord Ready!");
+
+        EventScheduler.Setup(Services);
     }
 }

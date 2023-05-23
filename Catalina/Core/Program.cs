@@ -53,8 +53,6 @@ class Program
 
         ProgramData.StartTime = DateTime.UtcNow;
         await Discord.Discord.SetupClient(services);
-
-        EventScheduler.Start(services);
         await Task.Delay(-1);
     }
 #pragma warning restore IDE0079 // Remove unnecessary suppression
