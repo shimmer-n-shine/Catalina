@@ -107,6 +107,7 @@ public static class EventScheduler
                 services.GetRequiredService<Logger>()
                 .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
                 await Task.Delay(nextExecution - utcNow);
+                utcNow = DateTime.UtcNow;
             }
         }).Start();
     }
