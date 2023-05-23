@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
@@ -81,17 +80,30 @@ public static class EventScheduler
             _events.Add(scheduledEvent);
         }
 
-        new Thread(() =>
+        Start(services);
+    }
+    private static void Start(ServiceProvider services)
+        {
+        new Task(async () =>
         {
             var utcNow = DateTime.UtcNow;
             var nearestMinute = DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1));
-            Thread.Sleep(nearestMinute - utcNow);
+            services.GetRequiredService<Logger>()
+            .Debug($"Scheduler sleeping until {nearestMinute.ToLocalTime():HH:mm:ss.f}");
+            await Task.Delay(nearestMinute - utcNow);
             Tick(services);
             while (true)
             {
                 Tick(services);
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
-                Thread.Sleep(_events.Where(ev => ev is RepeatingEvent).Min(e => ((RepeatingEvent) e).Interval));
+                var nextExecution = _events.Min(e => e.NextExecution);
+                services.GetRequiredService<Logger>()
+                .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
+                await Task.Delay(
+                    (nextExecution - DateTime.UtcNow) > TimeSpan.FromSeconds(1) 
+                    ? (nextExecution - DateTime.UtcNow) 
+                    : TimeSpan.FromMinutes(1)
+                    );
             }
         }).Start();
     }
