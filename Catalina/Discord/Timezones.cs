@@ -43,7 +43,7 @@ public static class Timezones
         Roles.Add(dbRole, role);
     }
 
-    [InvokeRepeating(interval: Timings.FifteenMinutes, alignTo: AlignTo.OneHour)]
+    [InvokeRepeating(interval: Timings.FifteenMinutes, alignTo: AlignTo.FifteenMinutes)]
     public static async Task UpdateTimes()
     {
         foreach (var rolePair in Roles)
