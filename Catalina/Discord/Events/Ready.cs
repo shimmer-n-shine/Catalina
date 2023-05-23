@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using Catalina.Core;
+using Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 using System.Threading.Tasks;
