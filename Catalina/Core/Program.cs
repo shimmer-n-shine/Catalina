@@ -38,7 +38,7 @@ class Program
         serviceBuilder = serviceBuilder.AddLogging(builder =>
         {
             var logger = new LoggerConfiguration().
-            MinimumLevel.Verbose()
+            MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
