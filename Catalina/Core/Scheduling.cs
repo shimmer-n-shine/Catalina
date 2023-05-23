@@ -36,12 +36,12 @@ public static class EventScheduler
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
-                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong) attribute.AlignTo));
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
                 repeatingEvent.NextExecution = nextExecution;
             }
             else
             {
-                repeatingEvent.NextExecution = DateTime.UtcNow + attribute.Interval + attribute.Delay;
+                repeatingEvent.NextExecution = DateTime.UtcNow.RoundToNearest(attribute.Interval) + attribute.Delay;
             }
             string fullMethodName = $"{repeatingEvent.Method.DeclaringType.Namespace}" +
                 $".{repeatingEvent.Method.DeclaringType.Name}" +
@@ -63,7 +63,7 @@ public static class EventScheduler
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
-                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong) (attribute.AlignTo)));
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)(attribute.AlignTo)));
                 scheduledEvent.NextExecution = nextExecution;
             }
             else
@@ -94,21 +94,21 @@ public static class EventScheduler
             Tick(services);
             while (true)
             {
-                Tick(services);
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
                 var nextExecution = _events.Min(e => e.NextExecution);
-                services.GetRequiredService<Logger>()
-                .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
                 await Task.Delay(
-                    (nextExecution - DateTime.UtcNow) > TimeSpan.FromSeconds(1) 
-                    ? (nextExecution - DateTime.UtcNow) 
+                    (nextExecution - DateTime.UtcNow) > TimeSpan.FromSeconds(1)
+                    ? (nextExecution - DateTime.UtcNow)
                     : TimeSpan.FromMinutes(1)
                     );
+                Tick(services);
+                services.GetRequiredService<Logger>()
+                .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
             }
         }).Start();
     }
 
-    public static void AddEvent(IEvent @event) 
+    public static void AddEvent(IEvent @event)
     {
         if (_events.Any(e => e.Method == @event.Method))
         {
@@ -133,7 +133,9 @@ public static class EventScheduler
         for (int i = 0; i < _events.Count; i++)
         {
             var @event = _events[i];
-            if (DateTime.UtcNow >= @event.NextExecution)
+            bool success = true;
+            DateTime utcNow = DateTime.UtcNow;
+            if (utcNow >= @event.NextExecution)
             {
                 try
                 {
@@ -142,35 +144,34 @@ public static class EventScheduler
                 }
                 catch (Exception ex)
                 {
+                    success = false;
                     services.GetRequiredService<Logger>().Error(ex, ex.Message);
-                    @event.NextExecution = 
-                        (@event is RepeatingEvent repeatingEvent) 
-                        ? DateTime.UtcNow.RoundUp(TimeSpan.FromMinutes(1)) + repeatingEvent.Interval 
-                        : DateTime.UtcNow.RoundUp(TimeSpan.FromHours(1));
+                    @event.NextExecution =
+                        (@event is RepeatingEvent re)
+                        ? utcNow.RoundUp(re.Interval)
+                        : utcNow.RoundUp(TimeSpan.FromHours(1));
                 }
-                finally
+                if (!success) return;
+
+                string fullMethodName = $"{@event.Method.DeclaringType.Namespace}" +
+                    $".{@event.Method.DeclaringType.Name}" +
+                    $".{@event.Method.Name}";
+                if (@event is RepeatingEvent repeatingEvent)
                 {
-                    string fullMethodName = $"{@event.Method.DeclaringType.Namespace}" +
-                        $".{@event.Method.DeclaringType.Name}" +
-                        $".{@event.Method.Name}";
-                    if (@event is RepeatingEvent repeatingEvent)
-                    {
-                        @event.NextExecution = DateTime.UtcNow + repeatingEvent.Interval;
-                        services.GetRequiredService<Logger>()
-                            .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
-                    }
-                    else
-                    {
-                        RemoveEvent(@event);
-                        services.GetRequiredService<Logger>()
-                            .Debug($"{fullMethodName} complete; removed from events list");
-                    }
+                    @event.NextExecution = (utcNow.RoundUp(repeatingEvent.Interval));
+                    services.GetRequiredService<Logger>()
+                        .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
+                }
+                else
+                {
+                    RemoveEvent(@event);
+                    services.GetRequiredService<Logger>()
+                        .Debug($"{fullMethodName} complete; removed from events list");
                 }
             }
         }
     }
-
-}
+}       
 
 public interface IEvent 
 {
