@@ -20,11 +20,11 @@ public static class EventScheduler
         var events = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(x => x.GetTypes())
             .SelectMany(y => y.GetMethods())
-            .Where(m => m.GetCustomAttribute<Invoke>() is not null && m.IsPublic && m.IsStatic);
+            .Where(m => m.GetCustomAttribute<Invoke>() is not null && m.IsPublic && !m.IsGenericMethod);
         var repeatingEvents = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(x => x.GetTypes())
             .SelectMany(y => y.GetMethods())
-            .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null && m.IsPublic && m.IsStatic);
+            .Where(m => m.GetCustomAttribute<InvokeRepeating>() is not null && m.IsPublic && !m.IsGenericMethod);
 
         foreach (var @event in repeatingEvents)
         {
@@ -139,8 +139,22 @@ public static class EventScheduler
             {
                 try
                 {
+                    //kill generics, they're smelly
+                    if (@event.Method.IsGenericMethod) continue;
+
+                    //not racist
                     services.GetRequiredService<Logger>().Debug($"Ticking {@event.Method.Name}");
+
+
+                    if (@event.Method.IsStatic)
+                    {
                     @event.Method.Invoke(null, null);
+                }
+                    else
+                    {
+                        @event.Method.Invoke(Activator.CreateInstance(@event.Method.DeclaringType), null);
+                    }
+                    
                 }
                 catch (Exception ex)
                 {
