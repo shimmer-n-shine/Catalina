@@ -98,12 +98,12 @@ public static class EventScheduler
             {
                 var utcNow = DateTime.UtcNow;
                 if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
-                var nextExecution = _events.Min(e => e.NextExecution);
-                nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1) 
-                    ? nextExecution 
-                    : DateTime.UtcNow + TimeSpan.FromMinutes(1);
-               
                 Tick(services);
+                var nextExecution = _events.Min(e => e.NextExecution);
+                nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1)
+                    ? nextExecution
+                    : DateTime.UtcNow + TimeSpan.FromMinutes(1);
+
                 services.GetRequiredService<Logger>()
                 .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
                 await Task.Delay(nextExecution - utcNow);
@@ -175,7 +175,7 @@ public static class EventScheduler
                     $".{@event.Method.Name}";
                 if (@event is RepeatingEvent repeatingEvent)
                 {
-                    @event.NextExecution = (utcNow.RoundToNearest(repeatingEvent.Interval));
+                    @event.NextExecution = (utcNow.RoundUp(repeatingEvent.Interval));
                     services.GetRequiredService<Logger>()
                         .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
                 }
