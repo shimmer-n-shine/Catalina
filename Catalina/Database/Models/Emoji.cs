@@ -26,7 +26,7 @@ public class Emoji
         }
         else if (emote is DiscordNET.Emoji internalEmote)
         {
-            return new Emoji { Type = EmojiType.Internal, NameOrID = EmojiOne.EmojiOne.ToShort(internalEmote.Name) };
+            return new Emoji { Type = EmojiType.Internal, NameOrID = EmojiToolkit.Emoji.Shortcode(internalEmote.Name) };
         }
         else
         {
@@ -78,7 +78,7 @@ public class Emoji
         {
             try
             {
-                return new DiscordNET.Emoji(EmojiOne.EmojiOne.ShortnameToUnicode(emoji.NameOrID));
+                return new DiscordNET.Emoji(EmojiToolkit.Emoji.Get(emoji.NameOrID).Raw);
             }
             catch
             {
