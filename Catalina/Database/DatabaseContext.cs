@@ -17,6 +17,7 @@ public class DatabaseContext : DbContext
     public DbSet<StarboardSettings> StarboardSettings { get; set; }
     public DbSet<Emoji> Emojis { get; set; }
     public DbSet<Vote> StarboardVotes { get; set; }
+    public DbSet<DependentRole> DependentRoles { get; set; }
     public DbSet<TimezoneSettings> TimezonesSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -31,7 +32,11 @@ public class DatabaseContext : DbContext
 
         modelBuilder.Entity<Message>().HasMany(m => m.Votes);
 
-        modelBuilder.Entity<Role>().HasOne(g => g.Guild);
+        modelBuilder.Entity<Role>().HasOne(r => r.Guild);
+        modelBuilder.Entity<Role>().HasMany(r => r.DependentRoles);
+
+        modelBuilder.Entity<DependentRole>().HasOne(d => d.Role);
+        modelBuilder.Entity<DependentRole>().HasOne(d => d.Dependent);
 
     }
 }
