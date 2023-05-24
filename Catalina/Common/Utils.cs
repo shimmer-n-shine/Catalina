@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using Catalina.Database.Models;
+using Catalina.Extensions;
+using Discord;
 using Discord.Commands;
 using System;
 using System.Linq;
@@ -8,12 +10,33 @@ namespace Catalina.Common;
 
 public static class Utils
 {
-    public class InformationMessage 
+    public interface ICatalinaMessage
     {
-        public string Body = null;
-        public string Title = "Heads Up!";
-        public Color Color = CatalinaColours.Blue;
-        public readonly IUser User;
+        public string Title { get; set; }
+        public string Body { get; set; }
+        public Color Color { get; set; }
+
+        public IUser User { get; protected set; }
+
+        public EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
+        {
+            Title = Title,
+            Color = Color,
+            Description = Body,
+            Footer = new EmbedFooterBuilder
+            {
+                IconUrl = User.GetAvatarUrl() ?? User.GetDefaultAvatarUrl(),
+                Text = $"Command executed for {User.FullName()}"
+            }
+        };
+    }
+    public class InformationMessage : ICatalinaMessage
+        {
+        public string Body { get; set; } = null;
+        public string Title { get; set; } = "Heads Up!";
+        public Color Color { get; set; } = CatalinaColours.Blue;
+        public IUser User { get; set; }
+
 
         public InformationMessage(IUser user, string title = "Heads Up!", string body = null, Color? color = null)
         {
@@ -27,27 +50,17 @@ public static class Utils
             this.User = user;
         }
 
-        public static implicit operator EmbedBuilder(InformationMessage message) => new EmbedBuilder
-        {
-            Title = message.Title,
-            Color = message.Color,
-            Description = message.Body,
-            Footer = new EmbedFooterBuilder
-            {
-                IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
-            }
-        };
+        public static implicit operator EmbedBuilder(InformationMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
 
         public static implicit operator Embed(InformationMessage message) => ((EmbedBuilder) message).Build();
     }
 
     public class AcknowledgementMessage
     {
-        public string Body = null;
-        public string Title = "Success!";
-        public Color Color = CatalinaColours.Green;
-        public readonly IUser User;
+        public string Body { get; set; } = null;
+        public string Title { get; set; } = "Success!";
+        public Color Color { get; set; } = CatalinaColours.Green;
+        public IUser User { get; set; }
 
         public AcknowledgementMessage(IUser user, string title = "Success!", string body = null, Color? color = null)
         {
@@ -61,26 +74,17 @@ public static class Utils
             this.User = user;
         }
 
-        public static implicit operator EmbedBuilder(AcknowledgementMessage message) => new EmbedBuilder
-        {
-            Title = message.Title,
-            Color = message.Color,
-            Description = message.Body,
-            Footer = new EmbedFooterBuilder
-            {
-                IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
-            }
-        };
+        public static implicit operator EmbedBuilder(AcknowledgementMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
 
         public static implicit operator Embed(AcknowledgementMessage message) => ((EmbedBuilder)message).Build();
     }
 
     public class WarningMessage
     {
-        public string Body;
-        public string Title = "Warning";
-        public readonly IUser User;
+        public string Body { get; set; }
+        public string Title { get; set; } = "Warning";
+        public Color Color { get; set; } = CatalinaColours.Yellow;
+        public IUser User { get; set; }
 
         public WarningMessage(IUser user, string title = "Warning!", string body = null)
         {
@@ -94,31 +98,22 @@ public static class Utils
             this.User = user;
         }
 
-        public static implicit operator EmbedBuilder(WarningMessage message) => new EmbedBuilder
-        {
-            Title = message.Title,
-            Color = CatalinaColours.Yellow,
-            Description = message.Body,
-            Footer = new EmbedFooterBuilder
-            {
-                IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
-            }
-        };
+        public static implicit operator EmbedBuilder(WarningMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
 
         public static implicit operator Embed(WarningMessage message) => ((EmbedBuilder)message).Build();
     }
     public class ErrorMessage
     {
-        public string Body;
-        public string Title;
-        public readonly IUser User;
-        public Exception Exception = new Exception("Something went wrong.");
+        public string Body { get; set; } = "Something went wrong!";
+        public string Title { get; set; } = "Uh oh!";
+        public Color Color { get; set; } = CatalinaColours.Red;
+        public IUser User { get; set; }
+        public Exception Exception { get; set; } = new Exception("Something went wrong.");
 
-        public ErrorMessage(IUser user, string title = "Uh Oh!", string body = null, Exception exception = null)
+        public ErrorMessage(IUser user, Exception exception, string title = "Uh Oh!")
         {
             this.Title = title;
-            this.Body = body;
+            this.Body = $"{exception.GetType().Name}: {exception.Message}";
             this.User = user;
             this.Exception = exception??new Exception("Something went wrong.");
         }
@@ -126,17 +121,20 @@ public static class Utils
         public ErrorMessage(IUser user)
         {
             this.User = user;
+            this.Body = "Unknown exception: Something went wrong, but I'm not sure what.";
         }
 
-        public static implicit operator EmbedBuilder(ErrorMessage message) => new EmbedBuilder
+        public static implicit operator EmbedBuilder(ErrorMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
+
+        public EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
         {
-            Title = message.Title,
-            Color = CatalinaColours.Red,
-            Description = message.Exception is not null ? $"{message.Exception.GetType().Name}: {message.Exception.Message}" : "Unknown exception",
+            Title = Title,
+            Color = Color,
+            Description = Body,
             Footer = new EmbedFooterBuilder
             {
-                IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                Text = string.Format("Command executed for {0}#{1}", message.User.Username, message.User.Discriminator)
+                IconUrl = User.GetAvatarUrl() ?? User.GetDefaultAvatarUrl(),
+                Text = $"Command executed for {User.FullName()}"
             }
         };
 
@@ -145,21 +143,12 @@ public static class Utils
 
     public class QueryMessage
     {
-        public readonly string Body;
-        public readonly string Title = "Wait.";
-        public readonly IUser User;
+        public string Body { get; set; } 
+        public string Title { get; set; } = "One sec!";
+        public Color Color { get; set; } = CatalinaColours.Lilac;
+        public IUser User { get; set; }
 
-        public static implicit operator EmbedBuilder(QueryMessage message) => new EmbedBuilder
-        {
-            Title = message.Title,
-            Color = CatalinaColours.Lilac,
-            Description = message.Body,
-            Footer = new EmbedFooterBuilder
-            {
-                IconUrl = message.User.GetAvatarUrl() ?? message.User.GetDefaultAvatarUrl(),
-                Text = string.Format("Command executed for {0}:{1}", message.User.Username, message.User.Discriminator)
-            }
-        };
+        public static implicit operator EmbedBuilder(QueryMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
 
         public static implicit operator Embed(QueryMessage message) => ((EmbedBuilder)message).Build();
     }
