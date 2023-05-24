@@ -22,7 +22,7 @@ public class Discord
     {
         DiscordClient = new DiscordSocketClient(new DiscordSocketConfig()
         {
-            LogLevel = LogSeverity.Verbose,
+            LogLevel = LogSeverity.Debug,
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.All, //remove all later
             AlwaysDownloadUsers = true,
         });
@@ -30,13 +30,13 @@ public class Discord
         InteractionService = new InteractionService(DiscordClient, new InteractionServiceConfig
         {
             DefaultRunMode = RunMode.Async,
-            LogLevel = LogSeverity.Verbose
+            LogLevel = LogSeverity.Debug
         });
 
         InteractiveService = new InteractiveService(DiscordClient as BaseSocketClient, new InteractiveConfig
         {
             DefaultTimeout = TimeSpan.FromSeconds(30),
-            LogLevel = LogSeverity.Verbose
+            LogLevel = LogSeverity.Debug
         });
     }
     public static async Task SetupClient(ServiceProvider services)
