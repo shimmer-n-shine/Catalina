@@ -1,24 +1,15 @@
 ﻿using Catalina.Common;
 using Catalina.Database;
 using Catalina.Database.Models;
-using Catalina.Discord.Commands.Autocomplete;
 using Catalina.Discord.Commands.SelectMenuBuilders;
 using Discord;
 using Discord.Interactions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Extensions.Logging;
-using NodaTime.TimeZones;
-using Serilog.Core;
-using DiscordNET = Discord;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Catalina.Discord.Commands.Modules.CoreModule;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using DiscordNET = Discord;
 
 namespace Catalina.Discord.Commands.Modules;
 public partial class ConfigurationModule : InteractionModuleBase
@@ -29,7 +20,7 @@ public partial class ConfigurationModule : InteractionModuleBase
     {
         private static Dictionary<Guid, RoleData> Data = new Dictionary<Guid, RoleData>();
 
-        private static DiscordNET.Emoji CogEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":cog:").Raw);
+        private static DiscordNET.Emoji EditEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":pencil2:").Raw);
         private static DiscordNET.Emoji DisabledEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":x:").Raw);
         private static DiscordNET.Emoji EnabledEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":white_check_mark:").Raw);
         private static DiscordNET.Emoji ResetEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":arrows_counterclockwise:").Raw);
@@ -47,10 +38,11 @@ public partial class ConfigurationModule : InteractionModuleBase
             public string Label { get; set; }
             public ButtonStyle ButtonStyle { get; set; } = ButtonStyle.Secondary;
             public IEmote Emote { get; set; }
-        } 
+        }
 
         public DatabaseContext Database { get; set; }
 
+        [DefaultMemberPermissions(PermissionConstants.Administrator)]
         [SlashCommand("properties", "view/set role properties")]
         public async Task GetSetRoleProperties()
         {
@@ -60,11 +52,11 @@ public partial class ConfigurationModule : InteractionModuleBase
             try
             {
                 componentBuilder = new ComponentBuilder()
-                .WithSelectMenu(new ColourMenu { ID = $"config_role_menu:{guid}" }.ToSelectMenuBuilder());
+                .WithSelectMenu(new RolesMenu(Database, Context.Guild, Context.User as IGuildUser) { ID = ComponentConstants.ConfigureRoleMenu.GetComponentWithID(guid.ToString()) }.ToSelectMenuBuilder());
             }
             catch (Exception ex)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = ex }, ephemeral: true);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, ex), ephemeral: true);
                 return;
             }
 
@@ -74,15 +66,21 @@ public partial class ConfigurationModule : InteractionModuleBase
                 Role = null,
             });
 
-            await RespondAsync(text: "Please select a role to modify.", components: componentBuilder.Build(), ephemeral: true);
+            await RespondAsync(components: componentBuilder.Build(), ephemeral: true);
 
             await Task.Delay(TimeSpan.FromMinutes(5));
             Data.Remove(guid);
         }
 
-        public async Task UpdateButtons(IInteractionContext Context, Guid guid)
+        public ComponentBuilder GenerateOverviewButtons(IInteractionContext Context, Guid guid)
         {
+            Data[guid] = new RoleData()
+            {
+                DBRole = Database.Roles.FirstOrDefault(r => r.ID == Data[guid].DBRole.ID),
+                Role = Data[guid].Role,
+            };
             var roleData = Data[guid];
+
             var message = (Context.Interaction as IComponentInteraction).Message;
 
             var originalActionRows = ComponentBuilder.FromComponents(message.Components).ActionRows;
@@ -111,11 +109,11 @@ public partial class ConfigurationModule : InteractionModuleBase
 
             timezoneButtonData.Label = "Timezone: Not Set";
             timezoneButtonData.ButtonStyle = ButtonStyle.Link;
-            timezoneButtonData.Emote = CogEmoji;
+            timezoneButtonData.Emote = EditEmoji;
 
             automationButtonData.Label = "Automation: Not Set";
             automationButtonData.ButtonStyle = ButtonStyle.Link;
-            automationButtonData.Emote = CogEmoji;
+            automationButtonData.Emote = EditEmoji;
 
             if (roleData.DBRole is not null)
             {
@@ -157,32 +155,43 @@ public partial class ConfigurationModule : InteractionModuleBase
             }
 
             //is renameable
-            buttonRow.WithButton(label: renameableButtonData.Label, customId: $"config_role_rename:{guid}", renameableButtonData.ButtonStyle, emote: renameableButtonData.Emote);
+            buttonRow.WithButton(label: renameableButtonData.Label
+                , customId: ComponentConstants.ConfigureRoleRenameable.GetComponentWithID(guid.ToString())
+                , renameableButtonData.ButtonStyle
+                , emote: renameableButtonData.Emote);
 
             //is colourable
-            buttonRow.WithButton(label: colourableButtonData.Label, customId: $"config_role_colour:{guid}", colourableButtonData.ButtonStyle, emote: colourableButtonData.Emote);
+            buttonRow.WithButton(label: colourableButtonData.Label
+                , customId: ComponentConstants.ConfigureRoleColourable.GetComponentWithID(guid.ToString())
+                , colourableButtonData.ButtonStyle
+                , emote: colourableButtonData.Emote);
 
             //timezone button
-            buttonRow.WithButton(label: timezoneButtonData.Label, customId: $"config_role_timezone:{guid}", style: timezoneButtonData.ButtonStyle, emote: timezoneButtonData.Emote);
+            buttonRow.WithButton(label: timezoneButtonData.Label
+                , customId: ComponentConstants.ConfigureRoleTimezone.GetComponentWithID(guid.ToString())
+                , style: timezoneButtonData.ButtonStyle
+                , emote: timezoneButtonData.Emote);
 
             //automation button
-            buttonRow.WithButton(label: automationButtonData.Label, customId: $"config_role_automation:{guid}", style: automationButtonData.ButtonStyle, emote: automationButtonData.Emote);
+            buttonRow.WithButton(label: automationButtonData.Label
+                , ComponentConstants.ConfigureRoleAutomation.GetComponentWithID(guid.ToString())
+                , style: automationButtonData.ButtonStyle
+                , emote: automationButtonData.Emote);
 
             //reset button
-            buttonRow.WithButton(label: "Reset", customId: $"config_role_reset:{guid}", style: ButtonStyle.Primary, emote: ResetEmoji);
+            buttonRow.WithButton(label: "Reset", customId: ComponentConstants.ConfigureRoleReset
+                .GetComponentWithID(guid.ToString()), style: ButtonStyle.Primary, emote: ResetEmoji);
 
             filteredActionRows.AddRow(buttonRow);
 
-            await message.ModifyAsync(msg =>
-            {
-                msg.Components = filteredActionRows.Build();
-            });
+            return filteredActionRows;
         }
 
         [ComponentInteraction("role_menu:*", true)]
         public async Task RoleResponse(string id, string[] options)
         {
             await DeferAsync();
+
             if (options is null || options.Length < 1 || !ulong.TryParse(options.First(), out ulong roleId)) return;
 
             var role = Context.Guild.GetRole(roleId);
@@ -196,20 +205,26 @@ public partial class ConfigurationModule : InteractionModuleBase
                 DBRole = dbRole,
             };
 
-            await UpdateButtons(Context, guid);
+            await ModifyOriginalResponseAsync(m =>
+            {
+                m.Components = GenerateOverviewButtons(Context, guid).Build();
+                m.Embed = ((EmbedBuilder)new Utils.InformationMessage(user: Context.User, title: "Role Settings Overview", body: $"Editing {role.Name}:")).Build();
+                m.Content = string.Empty;
+            });
+
         }
     }
 }
 
 
-    //properties
-    // make roles colourable
-    // make roles renameable
-    // set role timezones
+//properties
+// make roles colourable
+// make roles renameable
+// set role timezones
 
 
-    //automation 
-    // make roles auto assigned
-    // retroactively add/remove roles
-    // make roles depend on other roles to be assigned
-    // make roles get removed with others
+//automation 
+// make roles auto assigned
+// retroactively add/remove roles
+// make roles depend on other roles to be assigned
+// make roles get removed with others
