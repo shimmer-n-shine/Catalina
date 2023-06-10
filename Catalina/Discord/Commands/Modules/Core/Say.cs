@@ -51,7 +51,7 @@ public partial class CoreModule : InteractionModuleBase
         {
             await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: ex), ephemeral: true);
         }
-        
+
     }
 
     [ModalInteraction(ComponentConstants.SayRoleSelection, true)]
@@ -64,7 +64,7 @@ public partial class CoreModule : InteractionModuleBase
             MessageBody = response.MessageBody,
             ImageURL = response.ImageURL,
         };
-        ComponentBuilder componentBuilder = new ();;
+        ComponentBuilder componentBuilder = new();
         try
         {
             componentBuilder = new ComponentBuilder()
@@ -75,8 +75,8 @@ public partial class CoreModule : InteractionModuleBase
             await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: ex), ephemeral: true);
             return;
         }
-        
-            
+
+
 
         Data.Add(guid, data);
         await RespondAsync(text: "One last thing! What colour should your message embed be?", components: componentBuilder.Build(), ephemeral: true);
@@ -86,6 +86,35 @@ public partial class CoreModule : InteractionModuleBase
     public async Task MenuResponse(string id, string[] options)
     {
         await DeferAsync();
+        try
+        {
+            await Context.Interaction.DeleteOriginalResponseAsync();
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                await ModifyOriginalResponseAsync(m =>
+                {
+                    m.Embed = ((EmbedBuilder)new Utils.ErrorMessage(user: Context.User, exception: ex)).Build();
+                    m.Components = new ComponentBuilder().Build();
+                });
+            }
+            catch
+            {
+                var componentBuilder = ComponentBuilder.FromComponents((await GetOriginalResponseAsync()).Components);
+                var selectMenu = componentBuilder.ActionRows[0].Components.First(c => c.CustomId.StartsWith(ComponentConstants.SayRoleSelection.GetComponentName()));
+                var components = componentBuilder.ActionRows[0].Components;
+                components[components.FindIndex(c => c == selectMenu)] = ((SelectMenuComponent)selectMenu).ToBuilder().WithDisabled(true).Build();
+                var builtComponents = componentBuilder.Build();
+
+                await ModifyOriginalResponseAsync(m =>
+                {
+                    m.Components = new ComponentBuilder().Build();
+                });
+            }
+        }
+
         var guid = Guid.Parse(id);
         var datum = Data[Data.First(d => d.Key.Equals(guid)).Key];
         Data[Data.First(d => d.Key.Equals(guid)).Key] = new SayData
