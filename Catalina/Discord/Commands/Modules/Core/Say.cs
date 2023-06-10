@@ -37,6 +37,7 @@ public partial class CoreModule : InteractionModuleBase
         public string ImageURL { get; set; }
     }
 
+    [DefaultMemberPermissions(PermissionConstants.Administrator)]
     [RequirePrivilege(AccessLevel.Administrator)]
     [SlashCommand("say", "send a message as Catalina")]
     public async Task Say()

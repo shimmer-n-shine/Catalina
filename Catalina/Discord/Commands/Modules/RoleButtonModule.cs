@@ -75,6 +75,7 @@ public class RoleButtonModule : InteractionModuleBase
         }
     }
 
+    [DefaultMemberPermissions(PermissionConstants.Administrator)]
     [RequirePrivilege(AccessLevel.Administrator)]
     [Group("reaction", "Guild reactions")]
     public class ConfigurationModule : InteractionModuleBase
