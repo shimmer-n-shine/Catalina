@@ -1,5 +1,4 @@
-﻿using Catalina.Database.Models;
-using Catalina.Extensions;
+﻿using Catalina.Extensions;
 using Discord;
 using Discord.Commands;
 using System;
@@ -10,7 +9,7 @@ namespace Catalina.Common;
 
 public static class Utils
 {
-    public interface ICatalinaMessage
+    public class CatalinaMessage
     {
         public string Title { get; set; }
         public string Body { get; set; }
@@ -18,7 +17,7 @@ public static class Utils
 
         public IUser User { get; protected set; }
 
-        public EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
+        private protected virtual EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
         {
             Title = Title,
             Color = Color,
@@ -30,84 +29,72 @@ public static class Utils
             }
         };
     }
-    public class InformationMessage : ICatalinaMessage
-        {
-        public string Body { get; set; } = null;
-        public string Title { get; set; } = "Heads Up!";
-        public Color Color { get; set; } = CatalinaColours.Blue;
-        public IUser User { get; set; }
 
-
-        public InformationMessage(IUser user, string title = "Heads Up!", string body = null, Color? color = null)
-        {
-            this.Title = title;
-            this.Body = body;
-            this.Color = color??CatalinaColours.Blue;
-            this.User = user;
-        }
-        public InformationMessage(IUser user)
-        {
-            this.User = user;
-        }
-
-        public static implicit operator EmbedBuilder(InformationMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
-
-        public static implicit operator Embed(InformationMessage message) => ((EmbedBuilder) message).Build();
-    }
-
-    public class AcknowledgementMessage
+    public class InformationMessage : CatalinaMessage
     {
-        public string Body { get; set; } = null;
-        public string Title { get; set; } = "Success!";
-        public Color Color { get; set; } = CatalinaColours.Green;
-        public IUser User { get; set; }
-
-        public AcknowledgementMessage(IUser user, string title = "Success!", string body = null, Color? color = null)
+        public InformationMessage(IUser user, string title = "Heads Up!", string body = null, Color? color = null)
         {
             this.Title = title;
             this.Body = body;
             this.Color = color ?? CatalinaColours.Blue;
             this.User = user;
         }
+        public InformationMessage(IUser user)
+        {
+            this.User = user;
+            this.Title = "Heads Up!";
+            this.Color = CatalinaColours.Blue;
+        }
+
+        public static implicit operator EmbedBuilder(InformationMessage message) => message.ToEmbedBuilder();
+
+        public static implicit operator Embed(InformationMessage message) => ((EmbedBuilder)message).Build();
+    }
+
+    public class AcknowledgementMessage : CatalinaMessage
+    {
+        public AcknowledgementMessage(IUser user, string title = "Success!", string body = null, Color? color = null)
+        {
+            this.Title = title;
+            this.Body = body;
+            this.Color = color ?? CatalinaColours.Green;
+            this.User = user;
+        }
         public AcknowledgementMessage(IUser user)
         {
             this.User = user;
+            this.Title = "Success!";
+            this.Color = CatalinaColours.Green;
         }
 
-        public static implicit operator EmbedBuilder(AcknowledgementMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
+        public static implicit operator EmbedBuilder(AcknowledgementMessage message) => message.ToEmbedBuilder();
 
         public static implicit operator Embed(AcknowledgementMessage message) => ((EmbedBuilder)message).Build();
     }
 
-    public class WarningMessage
+    public class WarningMessage : CatalinaMessage
     {
-        public string Body { get; set; }
-        public string Title { get; set; } = "Warning";
-        public Color Color { get; set; } = CatalinaColours.Yellow;
-        public IUser User { get; set; }
-
         public WarningMessage(IUser user, string title = "Warning!", string body = null)
         {
             this.Title = title;
             this.Body = body;
             this.User = user;
+            this.Color = CatalinaColours.Yellow;
         }
 
         public WarningMessage(IUser user)
         {
+            this.Title = "Warning!";
             this.User = user;
+            this.Color = CatalinaColours.Yellow;
         }
 
-        public static implicit operator EmbedBuilder(WarningMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
+        public static implicit operator EmbedBuilder(WarningMessage message) => message.ToEmbedBuilder();
 
         public static implicit operator Embed(WarningMessage message) => ((EmbedBuilder)message).Build();
     }
-    public class ErrorMessage
+    public class ErrorMessage : CatalinaMessage
     {
-        public string Body { get; set; } = "Something went wrong!";
-        public string Title { get; set; } = "Uh oh!";
-        public Color Color { get; set; } = CatalinaColours.Red;
-        public IUser User { get; set; }
         public Exception Exception { get; set; } = new Exception("Something went wrong.");
 
         public ErrorMessage(IUser user, Exception exception, string title = "Uh Oh!")
@@ -115,18 +102,22 @@ public static class Utils
             this.Title = title;
             this.Body = $"{exception.GetType().Name}: {exception.Message}";
             this.User = user;
-            this.Exception = exception??new Exception("Something went wrong.");
+            this.Exception = exception;
+            this.Color = CatalinaColours.Red;
         }
 
         public ErrorMessage(IUser user)
         {
+            this.Title = "Uh Oh!";
+            this.Body = "Exception: Something went wrong, but I'm not sure what...";
             this.User = user;
-            this.Body = "Unknown exception: Something went wrong, but I'm not sure what.";
+            this.Color = CatalinaColours.Red;
+            this.Exception = new Exception("Something went wrong, but I'm not sure what...");
         }
 
-        public static implicit operator EmbedBuilder(ErrorMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
+        public static implicit operator EmbedBuilder(ErrorMessage message) => message.ToEmbedBuilder();
 
-        public EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
+        private protected override EmbedBuilder ToEmbedBuilder() => new EmbedBuilder
         {
             Title = Title,
             Color = Color,
@@ -139,16 +130,27 @@ public static class Utils
         };
 
         public static implicit operator Embed(ErrorMessage message) => ((EmbedBuilder)message).Build();
+
     }
 
-    public class QueryMessage
+    public class QueryMessage : CatalinaMessage
     {
-        public string Body { get; set; } 
-        public string Title { get; set; } = "One sec!";
-        public Color Color { get; set; } = CatalinaColours.Lilac;
-        public IUser User { get; set; }
+        public QueryMessage(IUser user, string title = "One sec!!", string body = null, Color? color = null)
+        {
+            this.Title = title;
+            this.Body = body;
+            this.Color = color ?? CatalinaColours.Lilac;
+            this.User = user;
+        }
+        public QueryMessage(IUser user)
+        {
+            this.Title = "One sec!!";
+            this.Body = null;
+            this.Color = CatalinaColours.Lilac;
+            this.User = user;
+        }
 
-        public static implicit operator EmbedBuilder(QueryMessage message) => (message as ICatalinaMessage).ToEmbedBuilder();
+        public static implicit operator EmbedBuilder(QueryMessage message) => message.ToEmbedBuilder();
 
         public static implicit operator Embed(QueryMessage message) => ((EmbedBuilder)message).Build();
     }
@@ -163,10 +165,7 @@ public static class Utils
         }
         else if (message.IsTimeout)
         {
-            var embed = new ErrorMessage(user: ctx.User)
-            {
-                Body = "You took too long to respond."
-            };
+            var embed = new ErrorMessage(user: ctx.User, exception: new Exceptions.InvalidArgumentException("You took too long to respond."));
             await ctx.Message.ReplyAsync(embed: embed);
         }
         return null;
@@ -180,7 +179,7 @@ public static class Utils
         if (messageID.HasValue && channelID.HasValue)
         {
             var channel = await ctx.Guild.GetTextChannelAsync(channelID.Value);
-            return await channel.GetMessageAsync(messageID.Value); 
+            return await channel.GetMessageAsync(messageID.Value);
         }
         else
         {
@@ -217,7 +216,7 @@ public static class Utils
         var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
         if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
         var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
-        var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+        var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || (r.Permissions.Administrator && r.Position < highestUserRole.Position));
         var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
         var results = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
 

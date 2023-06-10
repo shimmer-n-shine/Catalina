@@ -23,7 +23,7 @@ public class StylisationModule : InteractionModuleBase
     {
         if (!ulong.TryParse(roleID, out ulong id))
         {
-            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
+            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new ArgumentException()), ephemeral: true);
             return;
         }
 
@@ -61,12 +61,12 @@ public class StylisationModule : InteractionModuleBase
             }
             else
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new UnauthorizedAccessException() }, ephemeral: true);
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new UnauthorizedAccessException()), ephemeral: true);
             }
         }
         catch
         {
-            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
+            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new ArgumentException()), ephemeral: true);
             return;
 
         }
@@ -79,7 +79,7 @@ public class StylisationModule : InteractionModuleBase
     {
         if (!ulong.TryParse(roleID, out ulong id))
         {
-            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
+            await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new ArgumentException()), ephemeral: true);
             return;
         }
 
@@ -117,13 +117,13 @@ public class StylisationModule : InteractionModuleBase
             }
             else
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new UnauthorizedAccessException() }, ephemeral: true);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new UnauthorizedAccessException()), ephemeral: true);
             }
 
         }
         catch
         {
-            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new ArgumentException() }, ephemeral: true);
+            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new ArgumentException()), ephemeral: true);
             return;
         }
     }

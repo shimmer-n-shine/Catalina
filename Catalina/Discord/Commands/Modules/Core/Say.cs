@@ -48,7 +48,7 @@ public partial class CoreModule : InteractionModuleBase
         }
         catch (Exception ex)
         {
-            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = ex }, ephemeral: true);
+            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: ex), ephemeral: true);
         }
         
     }
@@ -71,7 +71,7 @@ public partial class CoreModule : InteractionModuleBase
         }
         catch (Exception ex)
         {
-            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = ex }, ephemeral: true);
+            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: ex), ephemeral: true);
             return;
         }
         
@@ -115,7 +115,7 @@ public partial class CoreModule : InteractionModuleBase
         }
         catch (Exception ex)
         {
-            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = ex }, ephemeral: true);
+            await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: ex), ephemeral: true);
         }
         Data.Remove(guid);
     }

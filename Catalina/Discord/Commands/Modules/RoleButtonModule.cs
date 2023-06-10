@@ -28,12 +28,12 @@ public class RoleButtonModule : InteractionModuleBase
 
                 await message.ModifyAsync(msg => msg.Components = messageComponents.Build());
                 await Context.Interaction.DeferAsync();
-                await FollowupAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidRoleException("Button was removed due to the role being invalid, please let the server administrator(s) know that this happened") }, ephemeral: true);
+                await FollowupAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidRoleException("Button was removed due to the role being invalid, please let the server administrator(s) know that this happened")), ephemeral: true);
             }
             catch
             {
                 await Context.Interaction.DeferAsync();
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.UnknownException ("Button was unable to be removed, and the role being assigned is inalid, please let the server administrator(s) know that this happened") }, ephemeral: true);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.UnknownException("Button was unable to be removed, and the role being assigned is inalid, please let the server administrator(s) know that this happened")), ephemeral: true);
                 Log.Error($"Could not remove button from message {message.Id} in guild {Context.Guild.Name} ({Context.Guild.Id})");
                 return;
             }
@@ -52,7 +52,7 @@ public class RoleButtonModule : InteractionModuleBase
             catch
             {
                 await Context.Interaction.DeferAsync();
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.UnknownException($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened.") }, ephemeral: true, allowedMentions: AllowedMentions.None);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.UnknownException($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened.")), ephemeral: true, allowedMentions: AllowedMentions.None);
                 Log.Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
                 throw new Exception($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
             }
@@ -68,7 +68,7 @@ public class RoleButtonModule : InteractionModuleBase
             catch
             {
                 await Context.Interaction.DeferAsync();
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.UnknownException($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened") }, ephemeral: true, allowedMentions: AllowedMentions.None);
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.UnknownException($"Could not remove {role.Mention} from you, please let the server administrator(s) know that this happened")), ephemeral: true, allowedMentions: AllowedMentions.None);
                 Log.Error($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
                 throw new Exception($"Could not remove role {Context.Guild.GetRole(roleId)} from {Context.User.Username}#{Context.User.Discriminator}");
             }
@@ -92,7 +92,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidArgumentException("The role you provided is invalid") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidArgumentException("The role you provided is invalid"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -100,14 +100,14 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (role is null)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidRoleException("The role you provided could not be found") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidRoleException("The role you provided could not be found"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             if (!await Utils.VerifyRoleForUser(Context, ulong.Parse(roleID)))
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InsufficientPermissionsException() };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InsufficientPermissionsException());
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -116,7 +116,7 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (message == null)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -131,7 +131,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception exception)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = exception });
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: exception));
                 return;
             }
 
@@ -145,7 +145,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidMessageLinkException("Could not add button, is the message linked from Catalina?") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidMessageLinkException("Could not add button, is the message linked from Catalina?"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -165,7 +165,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidArgumentException("The role you provided is invalid") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidArgumentException("The role you provided is invalid"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -173,14 +173,14 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (role is null)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidRoleException("The role you provided could not be found") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidRoleException("The role you provided could not be found"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             if (!await Utils.VerifyRoleForUser(Context, ulong.Parse(roleID)))
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InsufficientPermissionsException() };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InsufficientPermissionsException());
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -189,7 +189,7 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (message == null)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -204,7 +204,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception exception)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = exception });
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: exception));
                 return;
             }
 
@@ -219,7 +219,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception e)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = e };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: e);
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -237,7 +237,7 @@ public class RoleButtonModule : InteractionModuleBase
 
             if (message == null)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?") };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidMessageLinkException("Could not process message link, is it from the current guild?"));
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
@@ -248,7 +248,7 @@ public class RoleButtonModule : InteractionModuleBase
             }
             catch (Exception e)
             {
-                embed = new Utils.ErrorMessage(user: Context.User) { Exception = e };
+                embed = new Utils.ErrorMessage(user: Context.User, exception: e);
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }

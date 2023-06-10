@@ -23,11 +23,11 @@ public partial class CoreModule : InteractionModuleBase
         var message = await Context.Interaction.GetOriginalResponseAsync();
         var latency = (message.Timestamp - originalTime).TotalMilliseconds;
 
-        embed = new Utils.AcknowledgementMessage (user: Context.User)
+        embed = new Utils.AcknowledgementMessage(user: Context.User)
         {
             Title = "Pong!",
             Body = "Latency: " + latency + " ms",
         };
         await Context.Interaction.ModifyOriginalResponseAsync(msg => msg.Embed = embed);
     }
-} 
+}

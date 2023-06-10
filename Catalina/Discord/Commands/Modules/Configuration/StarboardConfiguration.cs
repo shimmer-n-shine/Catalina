@@ -44,7 +44,7 @@ public partial class ConfigurationModule : InteractionModuleBase
             }
             catch (Exception exception)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = exception });
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: exception));
                 return;
             }
 
@@ -60,7 +60,7 @@ public partial class ConfigurationModule : InteractionModuleBase
         {
             if (threshhold <= 0)
             {
-                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User) { Exception = new System.ArgumentException("Threshhold cannot be less than 1.") });
+                await Context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, exception: new Exceptions.InvalidArgumentException("Threshold cannot be less than 1.")));
                 return;
             }
             var guildProperties = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
