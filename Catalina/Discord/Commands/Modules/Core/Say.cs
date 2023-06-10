@@ -23,7 +23,7 @@ public partial class CoreModule : InteractionModuleBase
 
         [RequiredInput(false)]
         [InputLabel("Title")]
-        [ModalTextInput(customId: "say_title", placeholder: "", style: TextInputStyle.Short)]
+        [ModalTextInput("say_title", placeholder: "", style: TextInputStyle.Short)]
         public string MessageTitle { get; set; }
 
         [RequiredInput(true)]
@@ -44,7 +44,7 @@ public partial class CoreModule : InteractionModuleBase
         var id = Guid.NewGuid();
         try
         {
-            await RespondWithModalAsync<SayModal>($"say_menu:{id}");
+            await RespondWithModalAsync<SayModal>(ComponentConstants.SayRoleSelection.GetComponentWithID(id.ToString()));
         }
         catch (Exception ex)
         {
@@ -53,7 +53,7 @@ public partial class CoreModule : InteractionModuleBase
         
     }
 
-    [ModalInteraction("say_menu:*", true)]
+    [ModalInteraction(ComponentConstants.SayRoleSelection, true)]
     public async Task ModalResponse(string id, SayModal response)
     {
         var guid = Guid.Parse(id);
@@ -81,7 +81,7 @@ public partial class CoreModule : InteractionModuleBase
         await RespondAsync(text: "One last thing! What colour should your message embed be?", components: componentBuilder.Build(), ephemeral: true);
     }
 
-    [ComponentInteraction("say_select:*", true)]
+    [ComponentInteraction(ComponentConstants.SayRoleSelection, true)]
     public async Task MenuResponse(string id, string[] options)
     {
         await DeferAsync();
