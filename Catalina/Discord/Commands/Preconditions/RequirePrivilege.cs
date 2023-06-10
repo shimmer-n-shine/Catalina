@@ -17,10 +17,13 @@ public class RequirePrivilege : PreconditionAttribute
     public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
     {
         var access = GetPermission(context);
-        if (access >= _requiredLevel) return Task.FromResult(PreconditionResult.FromSuccess());
+        if (access >= _requiredLevel)
+        {
+            return Task.FromResult(PreconditionResult.FromSuccess());
+        }
         else
         {
-            context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: context.User) { Exception = new UnauthorizedAccessException()}, ephemeral: true);
+            context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: context.User, exception: new UnauthorizedAccessException()), ephemeral: true);
             return Task.FromResult(PreconditionResult.FromError("Insufficient Permission"));
         }
     }

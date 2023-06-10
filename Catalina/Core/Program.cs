@@ -1,11 +1,10 @@
-﻿using Serilog;
-using System;
-using System.Threading.Tasks;
+﻿using Catalina.Database;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Catalina.Database;
-using Microsoft.EntityFrameworkCore;
-using Catalina.Core;
+using Serilog;
+using System;
+using System.Threading.Tasks;
 
 namespace Catalina;
 

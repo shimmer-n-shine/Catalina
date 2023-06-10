@@ -1,13 +1,13 @@
 ﻿using Catalina.Database;
 using Discord;
 using Discord.Interactions;
+using FuzzySharp;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FuzzySharp;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog.Core;
 
 namespace Catalina.Discord.Commands.Autocomplete;
 
@@ -31,11 +31,12 @@ public class AssignableRoles : AutocompleteHandler
             var userRoles = (context.User as IGuildUser).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
             if (context.Guild.OwnerId == context.User.Id) userRoles = context.Guild.Roles;
             var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
-            var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+            var botRoles = (await context.Guild.GetCurrentUserAsync()).RoleIds.Select(r => context.Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || (r.Permissions.Administrator && r.Position < highestUserRole.Position));
             var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
             var preliminaryRoleResults = context.Guild.Roles.Where(r => r.Position < highestBotRole.Position);
 
-            results = preliminaryRoleResults.Select(r => new AutocompleteResult {
+            results = preliminaryRoleResults.Select(r => new AutocompleteResult
+            {
                 Name = r.Name,
                 Value = r.Id.ToString()
             }).ToList();

@@ -1,16 +1,16 @@
-﻿using Catalina.Database.Models;
+﻿using Catalina.Core;
+using Catalina.Database;
+using Catalina.Database.Models;
+using Catalina.Extensions;
 using Discord;
+using Microsoft.Extensions.DependencyInjection;
+using NodaTime;
+using NodaTime.TimeZones;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Catalina.Database;
-using Microsoft.Extensions.DependencyInjection;
 using DiscordNET = Discord;
-using NodaTime.TimeZones;
-using NodaTime;
-using Catalina.Extensions;
-using Catalina.Core;
 
 namespace Catalina.Discord;
 public static class Timezones
@@ -24,7 +24,7 @@ public static class Timezones
         var dbRoles = database.Roles.Where(r => !string.IsNullOrEmpty(r.Timezone));
 
         var dbGuilds = dbRoles.GroupBy(r => r.Guild);
-        
+
         foreach (var guildGroup in dbGuilds)
         {
             if (!guildGroup.Key.TimezoneSettings.Enabled) continue;

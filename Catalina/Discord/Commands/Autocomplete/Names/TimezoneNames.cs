@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Catalina.Database;
-using Catalina.Discord;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using FuzzySharp;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using NodaTime.TimeZones;
 using Serilog.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.Autocomplete;
 
@@ -20,9 +17,9 @@ public class TimezoneNames : AutocompleteHandler
     protected override string GetLogString(IInteractionContext context) => $"Getting timezone for {context.User}";
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(
-        IInteractionContext context, 
-        IAutocompleteInteraction autocompleteInteraction, 
-        IParameterInfo parameter, 
+        IInteractionContext context,
+        IAutocompleteInteraction autocompleteInteraction,
+        IParameterInfo parameter,
         IServiceProvider services)
     {
 
@@ -34,7 +31,7 @@ public class TimezoneNames : AutocompleteHandler
 
             results = timezones.Select(r => new AutocompleteResult
             {
-                Name = r.ZoneId.Replace("/", " - ").Replace('_',' '),
+                Name = r.ZoneId.Replace("/", " - ").Replace('_', ' '),
                 Value = r.ZoneId
             }).ToList();
 

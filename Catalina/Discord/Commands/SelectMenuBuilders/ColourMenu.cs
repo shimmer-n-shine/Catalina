@@ -1,16 +1,12 @@
 ﻿using Catalina.Common;
 using Discord;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Catalina.Discord.Commands.SelectMenuBuilders;
 public class ColourMenu : ISelectMenu
 {
     public string ID { get; set; } = "colour_menu";
-    public string Placeholder { get; set; } = "colour menu";
+    public string Placeholder { get; set; } = "Pick your colours here!";
     public List<SelectMenuOptionBuilder> Options
     {
         get
@@ -21,7 +17,7 @@ public class ColourMenu : ISelectMenu
             var emote = Emoji.Parse(unicode);
             foreach (var colour in colours)
             {
-                
+
                 options.Add(new SelectMenuOptionBuilder()
                 {
                     Label = colour.Key,

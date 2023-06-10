@@ -2,7 +2,6 @@
 using Humanizer;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace Catalina.Common;
 
@@ -135,12 +134,12 @@ public static class CatalinaColours
         {
             if (input.ToLower().Equals(prop.Name.ToLower()))
             {
-                return (Color) prop.GetValue(null);
+                return (Color)prop.GetValue(null);
             }
         }
         throw new System.ArgumentException("could not get colour from name");
     }
-    public static Dictionary<string,Color> ToDictionary()
+    public static Dictionary<string, Color> ToDictionary()
     {
         if (_dictionaryColours is null)
         {
@@ -153,5 +152,5 @@ public static class CatalinaColours
         }
 
         return _dictionaryColours;
-    } 
+    }
 }

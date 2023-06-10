@@ -36,7 +36,7 @@ public class RemoveableRoles : AutocompleteHandler
             var results = new List<AutocompleteResult>();
             foreach (var r in database.Guilds.Include(g => g.Roles).AsNoTracking().Where(g => g.ID == context.Guild.Id).SelectMany(g => g.Roles))
             {
-               results.Add(new AutocompleteResult
+                results.Add(new AutocompleteResult
                 {
                     Name = context.Guild.GetRole(r.ID).Name,
                     Value = r.ID.ToString()

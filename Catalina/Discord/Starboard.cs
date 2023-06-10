@@ -1,13 +1,13 @@
-﻿using Catalina.Database.Models;
+﻿using Catalina.Common;
+using Catalina.Database;
+using Catalina.Database.Models;
 using Discord;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Catalina.Database;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Catalina.Common;
 
 namespace Catalina.Discord;
 public static class Starboard
@@ -19,7 +19,7 @@ public static class Starboard
         //modify incoming guildProperty to include starboard messages, better to do it here than upstream :)
 
         guild = database.Guilds.Include(g => g.StarboardSettings).First(g => g == guild);
-        
+
         //microoptimisation; won't need to evaluate and find these twice this way
         var knownMessage = guild.StarboardSettings.Messages.FirstOrDefault(m => m.ChannelID == dMessage.Channel.Id && m.MessageID == dMessage.Id);
         var starboardMessage = guild.StarboardSettings.Messages.FirstOrDefault(m => guild.StarboardSettings.ChannelID == dMessage.Channel.Id && m.StarboardMessageID == dMessage.Id);
@@ -102,9 +102,13 @@ public static class Starboard
         //no channel found, terminate
         if (sbChannel is null) return null;
 
-        var finalMessage = await (sbChannel as IMessageChannel).SendMessageAsync(embed: new StarboardMessage {
+        var finalMessage = await (sbChannel as IMessageChannel).SendMessageAsync(embed: new StarboardMessage
+        {
             //Message = message, User = message.Author, Votes = votes, GuildProperty = database.GuildProperties.Include(g => g.StarboardEmoji).First(g => g == guildProperty) 
-            Message = message, User = message.Author, Votes = votes, Guild = database.Guilds.First(g => g == guildProperty) 
+            Message = message,
+            User = message.Author,
+            Votes = votes,
+            Guild = database.Guilds.First(g => g == guildProperty)
         });
         await finalMessage.AddReactionAsync(await Database.Models.Emoji.ToEmoteAsync(guildProperty.StarboardSettings.Emoji, guild));
         return finalMessage;
@@ -148,10 +152,10 @@ public static class Starboard
         public static implicit operator EmbedBuilder(StarboardMessage message) => new EmbedBuilder
         {
 
-            Fields = new List<EmbedFieldBuilder>() { 
-                new EmbedFieldBuilder { IsInline = true, Name = "Sent by:", Value = $"<@{message.User.Id}>"}, 
+            Fields = new List<EmbedFieldBuilder>() {
+                new EmbedFieldBuilder { IsInline = true, Name = "Sent by:", Value = $"<@{message.User.Id}>"},
                 new EmbedFieldBuilder { IsInline = true, Name = "In:", Value = $"<#{message.Message.Channel.Id}>" },
-                new EmbedFieldBuilder { IsInline = false, Name = "Original Message", Value = $"[Jump to Message]({(message.Message as IMessage).GetJumpUrl()})" }
+                new EmbedFieldBuilder { IsInline = false, Name = "Original Message", Value = $"[Jump to Message]({message.Message.GetJumpUrl()})" }
             },
             Color = CatalinaColours.Gold,
             Title = $"{message.Votes} {Database.Models.Emoji.ToEmoteAsync(message.Guild.StarboardSettings.Emoji, (message.Message.Channel as IGuildChannel).Guild).Result} | <t:{message.Message.Timestamp.ToUnixTimeSeconds()}>",

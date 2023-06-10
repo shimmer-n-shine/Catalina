@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 
 namespace Catalina.Discord.Events;
-public static partial class Events 
+public static partial class Events
 {
     [Invoke(alignTo: AlignTo.OneMinute)]
     public static async Task SetupTimezones()

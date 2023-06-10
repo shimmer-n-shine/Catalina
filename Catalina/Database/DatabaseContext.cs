@@ -1,12 +1,11 @@
 ﻿using Catalina.Database.Models;
 using Microsoft.EntityFrameworkCore;
-using static Catalina.Database.Models.StarboardSettings;
 
 namespace Catalina.Database;
 
 public class DatabaseContext : DbContext
 {
-    public DatabaseContext(DbContextOptions<DatabaseContext> dbContextOptions) : base(dbContextOptions) 
+    public DatabaseContext(DbContextOptions<DatabaseContext> dbContextOptions) : base(dbContextOptions)
     {
         this.ChangeTracker.LazyLoadingEnabled = true;
     }

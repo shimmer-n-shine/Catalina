@@ -29,7 +29,8 @@ public class ColourNames : AutocompleteHandler
             var results = new List<AutocompleteResult>();
             var colours = CatalinaColours.ToDictionary();
 
-            results = colours.Select(r => new AutocompleteResult {
+            results = colours.Select(r => new AutocompleteResult
+            {
                 Name = r.Key,
                 Value = r.Key
             }).ToList();

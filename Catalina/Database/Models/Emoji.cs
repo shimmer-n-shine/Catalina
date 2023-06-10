@@ -24,13 +24,11 @@ public class Emoji
             }
 
         }
-        else if (emote is DiscordNET.Emoji internalEmote)
-        {
-            return new Emoji { Type = EmojiType.Internal, NameOrID = EmojiToolkit.Emoji.Shortcode(internalEmote.Name) };
-        }
         else
         {
-            throw new System.ArgumentException("Invalid emote provided.");
+            return emote is DiscordNET.Emoji internalEmote
+                ? new Emoji { Type = EmojiType.Internal, NameOrID = EmojiToolkit.Emoji.Shortcode(internalEmote.Name) }
+                : throw new System.ArgumentException("Invalid emote provided.");
         }
     }
     public static async Task<Emoji> ParseAsync(string emoji, DiscordNET.IGuild guild)

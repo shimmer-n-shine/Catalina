@@ -9,7 +9,7 @@ public interface ISelectMenu
 
     public static List<SelectMenuOptionBuilder> Options { get; set; }
 
-    public static SelectMenuBuilder ToSelectMenuBuilder() 
+    public static SelectMenuBuilder ToSelectMenuBuilder()
     {
         return new SelectMenuBuilder(customId: ID, placeholder: Placeholder, options: Options);
     }

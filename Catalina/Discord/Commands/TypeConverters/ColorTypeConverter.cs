@@ -29,11 +29,11 @@ public class ColorTypeConverter : TypeConverter
         try
         {
             return Task.FromResult(TypeConverterResult.FromSuccess(CatalinaColours.FromName(input)));
-            
+
         }
-        catch 
+        catch
         {
-            context.Interaction.RespondAsync(embed: new Utils.ErrorMessage (user: context.User) { Exception = new ArgumentException() }, ephemeral: true);
+            context.Interaction.RespondAsync(embed: new Utils.ErrorMessage(user: context.User, exception: new ArgumentException()), ephemeral: true);
             return Task.FromResult(TypeConverterResult.FromError(InteractionCommandError.ParseFailed, $"`{input}` is not a valid Color Input"));
         }
     }

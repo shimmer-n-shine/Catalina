@@ -1,14 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using Discord;
-using Fergun.Interactive;
-using Discord.WebSocket;
-using System.Reflection;
-using Discord.Interactions;
-using RunMode = Discord.Interactions.RunMode;
+﻿using Catalina.Core;
 using Catalina.Discord.Commands.TypeConverters;
-using Catalina.Core;
+using Discord;
+using Discord.Interactions;
+using Discord.WebSocket;
+using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Reflection;
+using System.Threading.Tasks;
+using RunMode = Discord.Interactions.RunMode;
 
 namespace Catalina.Discord;
 
@@ -47,7 +47,7 @@ public class Discord
         InteractionService.AddTypeConverter<Color>(new ColorTypeConverter());
 
         await InteractionService.AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
-        
+
 
         DiscordClient.UserJoined += Events.Events.GuildMemberAdded;
         DiscordClient.InteractionCreated += Events.Events.InteractionCreated;

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Infrastructure;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
@@ -26,14 +25,7 @@ public class StarboardSettings
     public void SetOrCreateEmoji(Emoji emoji, DatabaseContext database)
     {
 
-        if (database.Emojis.Any(e => e.NameOrID == emoji.NameOrID))
-        {
-            this.Emoji = database.Emojis.First(e => e.NameOrID == emoji.NameOrID);
-        }
-        else
-        {
-            this.Emoji = emoji;
-        }
+        this.Emoji = database.Emojis.Any(e => e.NameOrID == emoji.NameOrID) ? database.Emojis.First(e => e.NameOrID == emoji.NameOrID) : emoji;
 
         //this.Emoji = database.Emojis.Any(e => e.NameOrID == emoji.NameOrID) ? database.Emojis.First(e => e.NameOrID == emoji.NameOrID) : emoji;
 

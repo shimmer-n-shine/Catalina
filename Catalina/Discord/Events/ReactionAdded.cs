@@ -1,9 +1,9 @@
 ﻿using Catalina.Database;
-using Discord.WebSocket;
 using Discord;
+using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Catalina.Discord.Events;
 public static partial class Events

@@ -1,30 +1,29 @@
-﻿using Catalina.Common;
-using Catalina.Database;
+﻿using Catalina.Database;
 using Catalina.Database.Models;
 using Discord;
 using System.Collections.Generic;
 using System.Linq;
-using DiscordNET = Discord;
 using System.Threading.Tasks;
+using DiscordNET = Discord;
 
 namespace Catalina.Discord.Commands.SelectMenuBuilders;
-public class Roles : ISelectMenu
+public class RolesMenu : ISelectMenu
 {
     private DatabaseContext _database;
     public string ID { get; set; } = "role_menu";
-    public string Placeholder { get; set; } = "colour menu";
+    public string Placeholder { get; set; } = "Pick the role you'd like the configure!";
 
     public IGuild Guild { get; set; }
     public IGuildUser User { get; set; }
 
-    public Roles(DatabaseContext dbContext, IGuild guild, IGuildUser user)
+    public RolesMenu(DatabaseContext dbContext, IGuild guild, IGuildUser user)
     {
         _database = dbContext;
         Guild = guild;
         User = user;
     }
 
-    private async Task<Dictionary<IRole,Role>> GetRoles()
+    private async Task<Dictionary<IRole, Role>> GetRoles()
     {
         var userRoles = User.RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
         if (Guild.OwnerId == User.Id) userRoles = Guild.Roles;
@@ -34,7 +33,7 @@ public class Roles : ISelectMenu
         var roles = Guild.Roles.Where(r => r.Position < highestBotRole.Position);
         var dbRoles = new List<Role>();
 
-        Dictionary<IRole,Role> rolePairs = new Dictionary<IRole, Role>();
+        Dictionary<IRole, Role> rolePairs = new Dictionary<IRole, Role>();
 
         foreach (var role in roles)
         {
@@ -45,7 +44,8 @@ public class Roles : ISelectMenu
     }
     public List<SelectMenuOptionBuilder> Options
     {
-        get {
+        get
+        {
             var options = new List<SelectMenuOptionBuilder>();
             var roles = GetRoles().Result;
             var editEmoji = DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":gear:").Raw);

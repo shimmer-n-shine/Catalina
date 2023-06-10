@@ -5,13 +5,13 @@ public class Exceptions
 {
     public class DuplicateEntryException : Exception
     {
-        public DuplicateEntryException() : base("Entry already exists") {}
+        public DuplicateEntryException() : base("Entry already exists") { }
 
         public DuplicateEntryException(string message) : base(message) { }
     }
     public class InvalidArgumentException : Exception
     {
-        public InvalidArgumentException() : base("The input provided is invalid") {}
+        public InvalidArgumentException() : base("The input provided is invalid") { }
         public InvalidArgumentException(string message) : base(message) { }
     }
     public class InvalidMessageLinkException : Exception
@@ -19,7 +19,7 @@ public class Exceptions
         public InvalidMessageLinkException() : base("The message link provided is invalid") { }
         public InvalidMessageLinkException(string message) : base(message) { }
     }
-    public class InsufficientPermissionsException : Exception 
+    public class InsufficientPermissionsException : Exception
     {
         public InsufficientPermissionsException() : base("You do not have sufficient permissions to perform this action") { }
         public InsufficientPermissionsException(string message) : base(message) { }

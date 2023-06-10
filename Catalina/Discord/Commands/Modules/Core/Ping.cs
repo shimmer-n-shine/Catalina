@@ -1,5 +1,4 @@
 ﻿using Catalina.Common;
-using Catalina.Discord.Commands.Autocomplete;
 using Catalina.Discord.Commands.Preconditions;
 using Discord;
 using Discord.Interactions;
@@ -10,7 +9,6 @@ namespace Catalina.Discord.Commands.Modules;
 
 public partial class CoreModule : InteractionModuleBase
 {
-
     [RequirePrivilege(AccessLevel.User)]
     [SlashCommand("ping", "Pong!")]
     public async Task Ping()

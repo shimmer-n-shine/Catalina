@@ -35,7 +35,8 @@ public class RenameableRoles : AutocompleteHandler
 
             var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
-            results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
+            results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult
+            {
                 Name = context.Guild.GetRole(r).Name,
                 Value = r.ToString()
             }).ToList();

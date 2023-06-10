@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Linq;
+﻿using Catalina.Common;
+using Catalina.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
-using Catalina.Common;
-using Catalina.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Catalina.Core;
@@ -64,7 +64,7 @@ public static class EventScheduler
             };
             if (attribute.AlignTo > AlignTo.Disabled)
             {
-                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)(attribute.AlignTo)));
+                var nextExecution = DateTime.UtcNow.RoundUp(TimeSpan.FromSeconds((ulong)attribute.AlignTo));
                 scheduledEvent.NextExecution = nextExecution;
             }
             else
@@ -117,8 +117,11 @@ public static class EventScheduler
         {
             _events.Add(@event);
         }
-        else throw new Exceptions
+        else
+        {
+            throw new Exceptions
                 .DuplicateEntryException("the action provided is already scheduled.");
+        }
     }
 
     public static void RemoveEvent(IEvent @event)
@@ -127,8 +130,11 @@ public static class EventScheduler
         {
             _events.Remove(_events.First(e => e.Method == @event.Method));
         }
-        else throw new Exceptions
+        else
+        {
+            throw new Exceptions
                 .InvalidArgumentException("the action provided does not exist.");
+        }
     }
 
     private static void Tick(ServiceProvider services)
@@ -157,7 +163,7 @@ public static class EventScheduler
                     {
                         @event.Method.Invoke(Activator.CreateInstance(@event.Method.DeclaringType), null);
                     }
-                    
+
                 }
                 catch (Exception ex)
                 {
@@ -175,7 +181,7 @@ public static class EventScheduler
                     $".{@event.Method.Name}";
                 if (@event is RepeatingEvent repeatingEvent)
                 {
-                    @event.NextExecution = (utcNow.RoundUp(repeatingEvent.Interval));
+                    @event.NextExecution = utcNow.RoundUp(repeatingEvent.Interval);
                     services.GetRequiredService<Logger>()
                         .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
                 }
@@ -197,9 +203,9 @@ public static class EventScheduler
                         .Debug($"{fullMethodName} removed from events list");
         }
     }
-}       
+}
 
-public interface IEvent 
+public interface IEvent
 {
     public MethodInfo Method { get; set; }
     public DateTime NextExecution { get; set; }
@@ -213,7 +219,7 @@ public struct RepeatingEvent : IEvent
     public RepeatingEvent(TimeSpan delay, TimeSpan interval, MethodInfo method)
     {
         Interval = interval; Method = method;
-        NextExecution = (DateTime.UtcNow + interval + delay);
+        NextExecution = DateTime.UtcNow + interval + delay;
     }
     public RepeatingEvent(DateTime executionTime, TimeSpan interval, MethodInfo method)
     {
@@ -234,7 +240,7 @@ public struct Event : IEvent
     public Event(TimeSpan delay, MethodInfo method)
     {
         Method = method;
-        NextExecution = (DateTime.UtcNow + delay);
+        NextExecution = DateTime.UtcNow + delay;
     }
     public Event(DateTime executionTime, MethodInfo method)
     {
@@ -253,19 +259,19 @@ public class InvokeRepeating : Attribute
 {
     public InvokeRepeating(Timings interval, Timings delay)
     {
-        Interval = TimeSpan.FromSeconds((double) interval);
-        Delay = TimeSpan.FromSeconds((double) delay);
+        Interval = TimeSpan.FromSeconds((double)interval);
+        Delay = TimeSpan.FromSeconds((double)delay);
         AlignTo = 0;
     }
     public InvokeRepeating(Timings interval, AlignTo alignTo)
     {
-        Interval = TimeSpan.FromSeconds((double) interval);
+        Interval = TimeSpan.FromSeconds((double)interval);
         Delay = TimeSpan.FromMinutes(5);
         AlignTo = alignTo;
     }
 
     public AlignTo AlignTo;
-    public TimeSpan Interval; 
+    public TimeSpan Interval;
     public TimeSpan Delay;
 }
 
@@ -274,7 +280,7 @@ public class Invoke : Attribute
 {
     public Invoke(Timings delay)
     {
-        Delay = TimeSpan.FromSeconds((double) delay);
+        Delay = TimeSpan.FromSeconds((double)delay);
         AlignTo = 0;
     }
     public Invoke(AlignTo alignTo)

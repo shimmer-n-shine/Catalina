@@ -1,14 +1,14 @@
 ﻿using Catalina.Database;
 using Discord;
 using Discord.Interactions;
+using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FuzzySharp;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog.Core;
 
 namespace Catalina.Discord.Commands.Autocomplete;
 
@@ -34,7 +34,8 @@ public class ColourableRoles : AutocompleteHandler
 
             var preliminaryUserRoleResults = (context.User as IGuildUser).RoleIds;
 
-            results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult {
+            results = preliminaryGuildRoleResults.Intersect(preliminaryUserRoleResults).Select(r => new AutocompleteResult
+            {
                 Name = context.Guild.GetRole(r).Name,
                 Value = r.ToString()
             }).ToList();
