@@ -28,7 +28,7 @@ public class RolesMenu : ISelectMenu
         var userRoles = User.RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
         if (Guild.OwnerId == User.Id) userRoles = Guild.Roles;
         var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
-        var botRoles = (await Guild.GetCurrentUserAsync()).RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator && r.Position < highestUserRole.Position);
+        var botRoles = (await Guild.GetCurrentUserAsync()).RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || (r.Permissions.Administrator && r.Position < highestUserRole.Position));
         var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
         var roles = Guild.Roles.Where(r => r.Position < highestBotRole.Position);
         var dbRoles = new List<Role>();

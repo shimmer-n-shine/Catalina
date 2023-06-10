@@ -213,7 +213,6 @@ public class RoleButtonModule : InteractionModuleBase
             {
                 var messageComponents = ComponentBuilder.FromComponents(message.Components).ActionRows.SelectMany(r => r.Components)
                     .Where(c => !(c.CustomId.Contains(role.Id.ToString()) || (c.Type == ComponentType.Button && (c as ButtonComponent).Emote == emote))).ToList();
-
                 await (message as IUserMessage).ModifyAsync(msg => msg.Components = ComponentBuilder.FromComponents(messageComponents).Build());
 
                 await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
@@ -228,7 +227,7 @@ public class RoleButtonModule : InteractionModuleBase
             await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
         }
         [RequirePrivilege(AccessLevel.Administrator)]
-        [SlashCommand("removeall", "remove a reaction button")]
+        [SlashCommand("removeall", "remove all reaction buttons")]
         public async Task RemoveAllRoleButtonsFromMessageAsync(
             [Summary("MessageLink")] string messageLink)
         {
