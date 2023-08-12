@@ -57,7 +57,7 @@ public class RolesMenu : ISelectMenu
                 {
                     Label = role.Key.Name,
                     Value = role.Key.Id.ToString(),
-                    Emote = role.Value is not null ? editEmoji : null
+                    Emote = role.Value is not null ? DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":pencil:").Raw) : DiscordNET.Emoji.Parse(EmojiToolkit.Emoji.Get(":page_facing_up:").Raw)
                 });
             }
             return options;

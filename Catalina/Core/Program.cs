@@ -37,7 +37,7 @@ class Program
         serviceBuilder = serviceBuilder.AddLogging(builder =>
         {
             var logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
             .Enrich.FromLogContext()
             .WriteTo.Console()

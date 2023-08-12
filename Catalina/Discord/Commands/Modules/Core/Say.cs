@@ -141,7 +141,7 @@ public partial class CoreModule : InteractionModuleBase
         if (string.IsNullOrEmpty(datum.MessageTitle) && string.IsNullOrEmpty(datum.MessageBody)) { embed.Description = $"This is a message sent on behalf of {Context.User.Mention}"; }
         try
         {
-            await Context.Channel.SendMessageAsync(embed: embed.Build());
+            await Context.Channel.SendMessageAsync(embed: embed.Build(), allowedMentions: AllowedMentions.None);
         }
         catch (Exception ex)
         {

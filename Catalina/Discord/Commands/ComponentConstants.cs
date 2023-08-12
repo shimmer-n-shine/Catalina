@@ -4,13 +4,15 @@ namespace Catalina.Discord.Commands;
 public static class ComponentConstants
 {
     public const string SayRoleSelection = "say_menu:*";
-    public const string RoleButtonSelection = "slct_role_btn:*";
-    public const string ConfigureRoleMenu = "cfg_role_menu:*";
-    public const string ConfigureRoleRenameable = "cfg_role_rename:*";
-    public const string ConfigureRoleColourable = "cfg_role_colour:*";
-    public const string ConfigureRoleAutomation = "cfg_role_auto:*";
-    public const string ConfigureRoleReset = "cfg_role_reset:*";
-    public const string ConfigureRoleTimezone = "cfg_role_tz:*";
+    public const string RoleButtonSelection = "slct_rl_btn:*";
+    public const string ConfigureRoleMenu = "cfg_rl_menu:*";
+    public const string ConfigureRoleRenameable = "cfg_rl_rnm:*";
+    public const string ConfigureRoleColourable = "cfg_rl_clr:*";
+    public const string ConfigureRoleAuto = "cfg_rl_auto:*";
+    public const string ConfigureRoleRetroactiveConfirm = "cfg_rl_rtrctv_ack:*";
+    public const string ConfigureRoleRetroactiveDecline = "cfg_rl_rtrctv_dec:*";
+    public const string ConfigureRoleReset = "cfg_rl_rst:*";
+    public const string ConfigureRoleTimezone = "cfg_rl_tz:*";
 
     public static string GetComponentWithID(this string s, string sd)
     {
