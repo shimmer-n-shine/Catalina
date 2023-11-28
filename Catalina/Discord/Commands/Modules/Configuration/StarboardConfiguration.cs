@@ -71,24 +71,4 @@ public partial class ConfigurationModule : InteractionModuleBase
             await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
         }
     }
-
-
-    [Group("timezones", "Timezones configurations")]
-    public class TimezonesConfiguration : InteractionModuleBase
-    {
-        public Logger Log { get; set; }
-        public DatabaseContext Database { get; set; }
-        [SlashCommand("enabled", "Enable timezones role updates")]
-        public async Task EnableTimezonesFeature(
-            [Summary("Enabled")] bool enabled = false)
-        {
-            var guildProperty = Database.Guilds.FirstOrDefault(g => g.ID == Context.Guild.Id);
-
-            guildProperty.TimezoneSettings.Enabled = enabled;
-
-            await Database.SaveChangesAsync();
-            await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User));
-        }
-    }
-
 }

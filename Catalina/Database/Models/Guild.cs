@@ -9,8 +9,6 @@ public class Guild
 
     public virtual StarboardSettings StarboardSettings { get; set; }
 
-    public virtual TimezoneSettings TimezoneSettings { get; set; }
-
     public virtual ICollection<Response> Responses { get; set; }
 
     public virtual ICollection<Role> Roles { get; set; }
