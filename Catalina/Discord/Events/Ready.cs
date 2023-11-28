@@ -10,7 +10,7 @@ public static partial class Events
     internal static async Task Ready()
     {
         await Discord.InteractionService.RegisterCommandsGloballyAsync();
-        await Discord.DiscordClient.SetGameAsync(type: ActivityType.Watching, name: "Jerma985.");
+        await Discord.DiscordClient.SetGameAsync(type: ActivityType.Playing, name: "OneShot!");
         Services.GetRequiredService<Logger>().Information("Discord Ready!");
 
         EventScheduler.Setup(Services);
