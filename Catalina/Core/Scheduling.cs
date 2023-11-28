@@ -14,6 +14,8 @@ public static class EventScheduler
 #pragma warning disable IDE0044 // Add readonly modifier
     private static List<IEvent> _events = new List<IEvent>();
 #pragma warning restore IDE0044 // Add readonly modifier
+    private static int[] retryDelays = { 10, 100, 200, 250, 500, 1000, 2000, 5000, 7500, 10000, 30000, 60000 };
+    private static int retryIndex = 0;
 
     public static void Setup(ServiceProvider services)
     {
@@ -96,17 +98,33 @@ public static class EventScheduler
 #endif
             while (true)
             {
-                var utcNow = DateTime.UtcNow;
-                if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
-                Tick(services);
-                var nextExecution = _events.Min(e => e.NextExecution);
-                nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1)
-                    ? nextExecution
-                    : DateTime.UtcNow + TimeSpan.FromMinutes(1);
+                try
+                {
+                    var utcNow = DateTime.UtcNow;
+                    if (!_events.Where(ev => ev is RepeatingEvent).Any()) return;
+                    Tick(services);
+                    var nextExecution = _events.Min(e => e.NextExecution);
+                    nextExecution = (nextExecution - utcNow) > TimeSpan.FromSeconds(1)
+                        ? nextExecution
+                        : DateTime.UtcNow + TimeSpan.FromMinutes(1);
 
-                services.GetRequiredService<Logger>()
-                .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
-                await Task.Delay(nextExecution - utcNow);
+                    services.GetRequiredService<Logger>()
+                    .Debug($"Next scheduler tick at {nextExecution.ToLocalTime():HH:mm:ss.f}");
+                    await Task.Delay(nextExecution - utcNow);
+
+                    if (retryIndex < 0) retryIndex = 0;
+                    else if (retryIndex > 0) retryIndex--;
+                    
+                }
+                catch (Exception ex)
+                {
+                    //ensure retryindex cannot go out of bounds
+                    if (retryIndex >= retryDelays.Length) retryIndex = retryDelays.Length - 1;
+
+                    services.GetRequiredService<Logger>()
+                    .Error($"Ticking failed. retrying in {MathF.Round(retryDelays[retryIndex] / 1000f, 1)} seconds.");
+                    await Task.Delay(retryDelays[retryIndex++]);      
+                }
             }
         }).Start();
     }
