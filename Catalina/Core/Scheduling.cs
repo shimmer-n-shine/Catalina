@@ -183,13 +183,13 @@ public static class EventScheduler
                 {
                     @event.NextExecution = utcNow.RoundUp(repeatingEvent.Interval);
                     services.GetRequiredService<Logger>()
-                        .Debug($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
+                        .Information($"{fullMethodName} scheduled for {@event.NextExecution.ToLocalTime():HH:mm:ss.f}");
                 }
                 else
                 {
                     eventsToRemove.Add(@event);
                     services.GetRequiredService<Logger>()
-                        .Debug($"{fullMethodName} completed and staged for removal");
+                        .Information($"{fullMethodName} completed and staged for removal");
                 }
             }
         }
@@ -200,7 +200,7 @@ public static class EventScheduler
                     $".{@event.Method.Name}";
             RemoveEvent(@event);
             services.GetRequiredService<Logger>()
-                        .Debug($"{fullMethodName} removed from events list");
+                        .Information($"{fullMethodName} removed from events list");
         }
     }
 }
