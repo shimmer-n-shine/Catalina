@@ -63,7 +63,7 @@ public static class Timezones
         Roles.Remove(Roles.First(r => r.Value.Id == role.Id).Key);
     }
 
-    [InvokeRepeating(interval: Timings.FifteenMinutes, alignTo: AlignTo.FifteenMinutes)]
+    [InvokeRepeating(interval: Timings.OneMinute, alignTo: AlignTo.OneMinute)]
     public static async Task UpdateTimes()
     {
         var logger = Services.GetService<Logger>();
@@ -83,9 +83,9 @@ public static class Timezones
 
                 var localTime = zonedTime
                     .ToDateTimeUnspecified()
-                    .RoundToNearest(TimeSpan.FromMinutes(15));
+                    .RoundToNearest(TimeSpan.FromMinutes(1));
                 await rolePair.Value.ModifyAsync(r => r.Name = $"{localTime:HH:mm} [{shortcode}]");
-                logger.Debug($"Updated timezone display for {rolePair.Value.Name}");
+                logger.Information($"Updated timezone display for {rolePair.Value.Name}");
             }
             catch (Exception ex)
             {
