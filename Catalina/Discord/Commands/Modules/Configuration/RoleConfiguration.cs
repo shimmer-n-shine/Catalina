@@ -93,9 +93,9 @@ public partial class ConfigurationModule : InteractionModuleBase
 
         [DefaultMemberPermissions(PermissionConstants.Administrator)]
         [SlashCommand("properties", "view/set role properties")]
-        public async Task GetSetRoleProperties(int pageNumber = 0)
+        public async Task GetSetRoleProperties(int pageNumber = 1)
         {
-            var result = GenerateConfigButtons(pageNumber);
+            var result = GenerateConfigButtons(pageNumber-1);
             if (result.ComponentBuilder is null)
             {
                 await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, result.Exception), ephemeral: true);
