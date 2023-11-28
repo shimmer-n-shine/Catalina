@@ -68,13 +68,12 @@ public class RolesMenu : ISelectMenu
         {
             //less than 24 objects
             pageCount = 1;
-
             currentRoles = rolesList;
         }
         else if (rolesList.Count <= 48)
         {
             pageCount = 2;
-            pageNumber = pageNumber > pageCount ? 0 : pageNumber;
+            pageNumber = pageNumber > pageCount ? pageCount - 1 : pageNumber;
             //less than 48 objects
             startIndex = pageNumber * 24;
             endIndex = Math.Min(startIndex + 24, rolesList.Count);
@@ -85,7 +84,7 @@ public class RolesMenu : ISelectMenu
             //more than 48 items
             int rolesExcludingEnds = rolesList.Count - 48;
             pageCount = (int)(MathF.Ceiling(rolesExcludingEnds / 23f) + 2);
-            pageNumber = pageNumber > pageCount - 1 ? 0 : pageNumber;
+            pageNumber = pageNumber > pageCount - 1 ? pageCount - 1 : pageNumber;
             //first page
             if (pageNumber == 0)
             {
@@ -107,11 +106,11 @@ public class RolesMenu : ISelectMenu
         }
         currentRoles = rolesList.Take(new Range(startIndex, endIndex)).ToList();
 
-        var optionsPage = new List<SelectMenuOptionBuilder>();
+        var options = new List<SelectMenuOptionBuilder>();
         //add back arrow
         if (currentRoles.Count > 1 && pageNumber != 0)
         {
-            optionsPage.Add(new SelectMenuOptionBuilder()
+            options.Add(new SelectMenuOptionBuilder()
             {
                 Label = "Previous Page",
                 Value = "previousPage",
@@ -121,7 +120,7 @@ public class RolesMenu : ISelectMenu
            
         foreach (var role in currentRoles)
         {
-            optionsPage.Add(new SelectMenuOptionBuilder()
+            options.Add(new SelectMenuOptionBuilder()
             {
                 Label = role.Key.Name,
                 Value = role.Key.Id.ToString(),
@@ -132,7 +131,7 @@ public class RolesMenu : ISelectMenu
         //add forward arrow
         if (currentRoles.Count > 1 && pageNumber != pageCount - 1)
         {
-            optionsPage.Add(new SelectMenuOptionBuilder()
+            options.Add(new SelectMenuOptionBuilder()
             {
                 Label = "Next Page",
                 Value = "nextPage",
@@ -140,7 +139,7 @@ public class RolesMenu : ISelectMenu
             });
         }
 
-        return optionsPage;
+        return options;
     }
 
     public SelectMenuBuilder ToSelectMenuBuilder(int pageNumber)
