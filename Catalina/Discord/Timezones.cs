@@ -37,11 +37,13 @@ public static class Timezones
             //if (!guildGroup.Key.TimezoneSettings.Enabled) continue;
 
             var guild = client.GetGuild(guildGroup.Key.ID);
+            if (guild is null) continue;
             var roles = guildGroup.ToList();
 
             foreach (var role in roles)
             {
-                Roles.Add(role, guild.GetRole(role.ID));
+                var guildRole = guild.GetRole(role.ID);
+                if (guildRole is not null) Roles.Add(role, guildRole);
             }
         }
     }
