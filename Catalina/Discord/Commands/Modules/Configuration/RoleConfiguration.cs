@@ -19,7 +19,6 @@ namespace Catalina.Discord.Commands.Modules;
 public partial class ConfigurationModule : InteractionModuleBase
 {
     [Group("role", "Guild role configuration")]
-
     public class RoleConfiguration : InteractionModuleBase
     {
         private static Dictionary<Guid, RoleData> Data = new Dictionary<Guid, RoleData>();
@@ -35,6 +34,7 @@ public partial class ConfigurationModule : InteractionModuleBase
         {
             public Role DBRole { get; set; }
             public IRole Role { get; set; }
+            public int PageNumber { get; set; }
         }
 
         public struct ButtonData
@@ -46,55 +46,83 @@ public partial class ConfigurationModule : InteractionModuleBase
             public IEmote Emote { get; set; }
         }
 
-        public DatabaseContext Database { get; set; }
+        public struct GenerateConfigButtonResult
+        {
+            public Guid? Guid { get; set; }
+            public ComponentBuilder ComponentBuilder { get; set; }
+            public Exception Exception { get; set; }
+            public int? PageNumber { get; set; }
+        }
 
-        [DefaultMemberPermissions(PermissionConstants.Administrator)]
-        [SlashCommand("properties", "view/set role properties")]
-        public async Task GetSetRoleProperties()
+        public GenerateConfigButtonResult GenerateConfigButtons(int pageNumber)
         {
             var guid = Guid.NewGuid();
 
-            ComponentBuilder componentBuilder = new(); ;
+            ComponentBuilder componentBuilder = new();
             try
             {
                 componentBuilder = new ComponentBuilder()
-                .WithSelectMenu(new RolesMenu(Database, Context.Guild, Context.User as IGuildUser) { ID = ComponentConstants.ConfigureRoleMenu.GetComponentWithID(guid.ToString()) }.ToSelectMenuBuilder());
+                .WithSelectMenu(new RolesMenu(Database, Context.Guild, Context.User as IGuildUser) { ID = ComponentConstants.ConfigureRoleMenu.GetComponentWithID(guid.ToString()) }.ToSelectMenuBuilder(pageNumber));
+
             }
             catch (Exception ex)
             {
-                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, ex), ephemeral: true);
-                return;
+                return new GenerateConfigButtonResult()
+                {
+                    Exception = ex
+                };
             }
+
 
             Data.Add(guid, new RoleData()
             {
                 DBRole = null,
                 Role = null,
+                PageNumber = pageNumber
             });
+
+            return new GenerateConfigButtonResult
+            {
+                Exception = null,
+                ComponentBuilder = componentBuilder,
+                Guid = guid,
+                PageNumber = pageNumber
+            };
+        }
+        public DatabaseContext Database { get; set; }
+
+        [DefaultMemberPermissions(PermissionConstants.Administrator)]
+        [SlashCommand("properties", "view/set role properties")]
+        public async Task GetSetRoleProperties(int pageNumber = 0)
+        {
+            var result = GenerateConfigButtons(pageNumber);
+            if (result.ComponentBuilder is null)
+            {
+                await RespondAsync(embed: new Utils.ErrorMessage(user: Context.User, result.Exception), ephemeral: true);
+                return;
+            }
 
             try
             {
-                await RespondAsync(components: componentBuilder.Build(), ephemeral: true);
+                await RespondAsync(components: result.ComponentBuilder.Build(), ephemeral: true);
             }
-            catch (Exception e)
+            catch
             {
-                Data.Remove(guid);
+                Data.Remove(result.Guid.Value);
             }
 
 
             await Task.Delay(TimeSpan.FromMinutes(5));
-            Data.Remove(guid);
+            Data.Remove(result.Guid.Value);
         }
 
         public ComponentBuilder GenerateOverviewButtons(IInteractionContext Context, Guid guid)
         {
             var dbGuild = Database.Guilds.First(g => g.ID == Context.Guild.Id);
 
-            Data[guid] = new RoleData()
-            {
-                DBRole = dbGuild.Roles.FirstOrDefault(r => r.ID == Data[guid].Role.Id),
-                Role = Data[guid].Role
-            };
+            var componentData = Data[guid];
+            componentData.DBRole = dbGuild.Roles.FirstOrDefault(r => r.ID == Data[guid].Role.Id);
+            Data[guid] = componentData;
 
             if (Data[guid].DBRole is null)
             {
@@ -105,11 +133,8 @@ public partial class ConfigurationModule : InteractionModuleBase
                 });
                 Database.SaveChanges();
 
-                Data[guid] = new RoleData()
-                {
-                    DBRole = Database.Roles.FirstOrDefault(r => r.ID == Data[guid].Role.Id),
-                    Role = Data[guid].Role
-                };
+                componentData.DBRole = Database.Roles.FirstOrDefault(r => r.ID == Data[guid].Role.Id);
+                Data[guid] = componentData;
             }
 
             var roleData = Data[guid];
@@ -477,23 +502,50 @@ public partial class ConfigurationModule : InteractionModuleBase
         {
             await DeferAsync();
 
-            if (options is null || options.Length < 1 || !ulong.TryParse(options.First(), out ulong roleId)) return;
-
-            var role = Context.Guild.GetRole(roleId);
-            var dbRole = Database.Roles.FirstOrDefault(r => r.ID == roleId);
             var guid = Guid.Parse(id);
-            var message = (Context.Interaction as IComponentInteraction).Message;
 
-            Data[guid] = new RoleData
+            if (options.First().Contains("next"))
             {
-                Role = role,
-                DBRole = dbRole,
-            };
+                var data = Data[guid];
+                data.PageNumber++;
+                Data[guid] = data;
 
-            await ModifyOriginalResponseAsync(m =>
+                await ModifyOriginalResponseAsync(m =>
+                    m.Components = GenerateConfigButtons(Data[guid].PageNumber).ComponentBuilder.Build()
+                );
+            }
+
+            else if (options.First().Contains("previous"))
             {
-                m.Components = GenerateOverviewButtons(Context, guid).Build();
-            });
+                var data = Data[guid];
+                data.PageNumber--;
+                Data[guid] = data;
+
+                await ModifyOriginalResponseAsync(m =>
+                    m.Components = GenerateConfigButtons(Data[guid].PageNumber).ComponentBuilder.Build()
+                );
+            }
+            else if ((options is null || options.Length < 1) || (!ulong.TryParse(options.First(), out ulong roleId)))
+            {
+                return;
+            }
+            else
+            {
+                var role = Context.Guild.GetRole(roleId);
+                var dbRole = Database.Roles.FirstOrDefault(r => r.ID == roleId);
+
+                var message = (Context.Interaction as IComponentInteraction).Message;
+
+                var data = Data[guid];
+                data.Role = role;
+                data.DBRole = dbRole;
+                Data[guid] = data;
+
+                await ModifyOriginalResponseAsync(m =>
+                {
+                    m.Components = GenerateOverviewButtons(Context, guid).Build();
+                });
+            }
         }
 
         [ComponentInteraction(ComponentConstants.ConfigureRoleTimezone, true)]
@@ -539,6 +591,7 @@ public partial class ConfigurationModule : InteractionModuleBase
                 Data[guid] = new RoleData()
                 {
                     Role = roleData.Role,
+                    PageNumber = roleData.PageNumber,
                     DBRole = null
                 };
             }
@@ -593,16 +646,3 @@ public partial class ConfigurationModule : InteractionModuleBase
         }
     }
 }
-
-
-//properties
-// make roles colourable
-// make roles renameable
-// set role timezones
-
-
-//automation 
-// make roles auto assigned
-// retroactively add/remove roles
-// make roles depend on other roles to be assigned
-// make roles get removed with others
