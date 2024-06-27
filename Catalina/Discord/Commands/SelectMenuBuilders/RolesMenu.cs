@@ -28,13 +28,28 @@ public class RolesMenu : ISelectMenu
 
     private async Task<Dictionary<IRole, Role>> GetRoles()
     {
-        var userRoles = User.RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator);
-        if (Guild.OwnerId == User.Id) userRoles = Guild.Roles;
-        var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
-        var botRoles = (await Guild.GetCurrentUserAsync()).RoleIds.Select(r => Guild.GetRole(r)).Where(r => r.Permissions.ManageRoles || (r.Permissions.Administrator && r.Position < highestUserRole.Position));
-        var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
-        var roles = Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+        IEnumerable<IRole> roles = new List<IRole>();
         var dbRoles = new List<Role>();
+
+        //if admin or owner
+        if (User.GuildPermissions.Administrator || Guild.OwnerId == User.Id)
+        {
+            var botRoles = (await Guild.GetCurrentUserAsync()).RoleIds
+                .Select(Guild.GetRole)
+                .Where(
+                    r => r.Permissions.ManageRoles || r.Permissions.Administrator);
+            var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
+            roles = Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+        }
+        //if not
+        else
+        {
+            var userRoles = User.RoleIds.Select(Guild.GetRole).Where(r => r.Permissions.ManageRoles || r.Permissions.Administrator).AsEnumerable();
+            var highestUserRole = userRoles.OrderByDescending(r => r.Position).First();
+            var botRoles = (await Guild.GetCurrentUserAsync()).RoleIds.Select(Guild.GetRole).Where(r => r.Permissions.ManageRoles || (r.Permissions.Administrator && r.Position < highestUserRole.Position));
+            var highestBotRole = botRoles.OrderByDescending(r => r.Position).First();
+            roles = Guild.Roles.Where(r => r.Position < highestBotRole.Position);
+        }
 
         Dictionary<IRole, Role> rolePairs = new Dictionary<IRole, Role>();
 
