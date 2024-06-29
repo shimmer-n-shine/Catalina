@@ -68,7 +68,10 @@ public partial class CoreModule : InteractionModuleBase
         try
         {
             componentBuilder = new ComponentBuilder()
-            .WithSelectMenu(new ColourMenu { ID = $"say_select:{id}" }.ToSelectMenuBuilder());
+            .WithSelectMenu(
+                new ColourMenu {
+                    ID = $"{ComponentConstants.GetComponentName(ComponentConstants.SayRoleSelection)}:{id}" }
+                        .ToSelectMenuBuilder());
         }
         catch (Exception ex)
         {
