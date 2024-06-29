@@ -139,7 +139,7 @@ public class RoleButtonModule : InteractionModuleBase
             try
             {
                 var messageComponents = ComponentBuilder.FromComponents(message.Components);
-                messageComponents = messageComponents.WithButton(emote: emote, label: role.Name, customId: ComponentConstants.SayRoleSelection.GetComponentWithID(role.Id.ToString()), style: ButtonStyle.Secondary);
+                messageComponents = messageComponents.WithButton(emote: emote, label: role.Name, customId: ComponentConstants.RoleButtonSelection.GetComponentWithID(role.Id.ToString()), style: ButtonStyle.Secondary);
                 await (message as IUserMessage).ModifyAsync(msg => msg.Components = messageComponents.Build());
 
                 await RespondAsync(embed: new Utils.AcknowledgementMessage(user: Context.User), ephemeral: true);
